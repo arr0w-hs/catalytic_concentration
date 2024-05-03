@@ -32,6 +32,7 @@ def self_tensor_prod_ver2(vec, num_of_copies):
 
 #function for calculating entanglement monotone from m onwards
 def ent_mono2(vec, m_begin, m_end):
+    #print(m_begin, m_end)
     em = 0
     if m_begin == m_end:
         em = vec[m_begin]
@@ -50,10 +51,11 @@ def concat_zeros(out_state, in_state):
     return out_state
 
 def prob_of_transformation(op_state, ip_state):
+    
     if np.shape(ip_state)[0] < np.shape(op_state)[0]:
         raise Exception("Incoherent dimensions of states")
 
-    op_state = concat_zeros(op_state, ip_state)
+    #op_state = concat_zeros(op_state, ip_state)
     p = np.zeros(np.shape(ip_state)[0])
     for i in range(np.shape(ip_state)[0]):
         if ent_mono2(op_state, i, np.shape(ip_state)[0]) != 0:
@@ -67,12 +69,12 @@ def majorisation_check(final_state, initial_state):
     if np.shape(initial_state)[0] < np.shape(final_state)[0]:
         raise Exception("Incoherent dimensions of states")
 
-    final_state = concat_zeros(final_state, initial_state)
+    #final_state = concat_zeros(final_state, initial_state)
     probab = prob_of_transformation(final_state, initial_state)
-    if probab < 1:
-        return 0
-    else:
-        return 1
+    if probab < 0.999:
+        print("failed to majorise")
+    return 
+    
 
 def func_for_lr(opstate, ipstate):
     n = np.shape(ipstate)[0]
@@ -106,7 +108,7 @@ def func_for_gamma(opstate, ipstate):
     if np.shape(ipstate)[0] < np.shape(opstate)[0]:
         raise Exception("Incoherent dimensions of states")
 
-    opstate = concat_zeros(opstate, ipstate)
+    #opstate = concat_zeros(opstate, ipstate)
     #print(opstate)
     l_array, r_array = func_for_lr(opstate, ipstate)
     len_r = len(r_array)
@@ -122,7 +124,7 @@ def slocc_povm_func_ver0(opstate, ipstate):
     if np.shape(ipstate)[0] < np.shape(opstate)[0]:
         raise Exception("Incoherent dimensions of states")
 
-    opstate = concat_zeros(opstate, ipstate)
+    #opstate = concat_zeros(opstate, ipstate)
     
     m1 = []
     l_array, r_array = func_for_lr(opstate, ipstate)
@@ -141,7 +143,7 @@ def slocc_povm_func(op_state, in_state):
     if np.shape(in_state)[0] < np.shape(op_state)[0]:
         raise Exception("Incoherent dimensions of states")
 
-    op_state = concat_zeros(op_state, in_state)
+    #op_state = concat_zeros(op_state, in_state)
     
     meas_matrix = []
     l_array, r_array = func_for_lr(op_state, in_state)

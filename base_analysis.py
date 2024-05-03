@@ -13,10 +13,10 @@ import math as math
 
 import sys
 import os
-sys.path.append(os.path.abspath("//Users/hsharma4/Desktop/Multipartite state concentration/GHZ state project/robustness"))
-from locc_base import *
-from slocc_base import *
-from state_change import *
+sys.path.append(os.path.dirname(__file__))
+from base_locc import *
+from base_slocc import *
+from base_state_change import *
 
 def fwhm_calculator(fidelity_list):
     list_of_higher_args = []

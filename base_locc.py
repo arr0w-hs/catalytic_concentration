@@ -14,8 +14,8 @@ import networkx as nx
 
 import sys
 import os
-sys.path.append(os.path.abspath("//Users/hsharma4/Desktop/Multipartite state concentration/GHZ state project/robustness"))
-from slocc_base import *
+sys.path.append(os.path.dirname(__file__))
+from base_slocc import *
 
 def concat_zeros(out_state, in_state):
     if np.shape(in_state)[0] >= np.shape(out_state)[0]:
@@ -34,7 +34,14 @@ def check_majorisation(final_state, initial_state):
         sumf += final_state[i]
         sumi += initial_state[i]
         if sumf < sumi:
+            #print("fail maj")
+            #print(sumf, "sumf")
+            #print(sumi, "sumi")
+            #print(sumf-sumi, "diff")
             res = 0 
+            #print(final_state, "gamma")
+            #print(initial_state, "ini state")
+            #raise Exception ("gamma does not majorise")
             #print(sumf, sumi, 'i', i)
             #print(np.sum(final_state), np.sum(initial_state))
             #print(i)
@@ -52,8 +59,11 @@ def k_t_transform(final_state, input_state):
             #print(final_state[i], final_state[i+1], input_state[0])
             #k_value = len(final_state)-1
     
+    #print(k_value, "k_value")
+    #print((final_state[0]-final_state[k_value]), "final state diff")
+    #print((input_state[0]-final_state[k_value]), "ini state diff")
     
-    if k_value != 0:
+    if (final_state[0]-final_state[k_value]) != 0:
         t_value = (input_state[0]-final_state[k_value])/(final_state[0]-final_state[k_value])
         #for i in range(len(final_state)-1):
         #   print(final_state[i], final_state[i+1], input_state[0])
@@ -85,10 +95,11 @@ def create_ds_matrix(final_state, input_state):
     
     ips_temp = input_state
     ops_temp = final_state
-    d_matrix = np.eye(len(input_state))    
-    while(not np.array_equal(ips_temp, ops_temp) and count <= 100):
+    d_matrix = np.eye(len(input_state))
+    while(not np.array_equal(ips_temp, ops_temp) and count <= 1200):
         
         k, t = k_t_transform(ops_temp, ips_temp)
+        #print(k, t)
         d_matrix_temp = create_t_matrix(t, 0, k, ips_temp)
         ops_temp = np.matmul(d_matrix_temp, ops_temp)
         
@@ -102,7 +113,7 @@ def create_ds_matrix(final_state, input_state):
         ops_temp = np.delete(ops_temp,0)
         count += 1
         if len(ips_temp) == 1:
-            count = 110
+            count = 1210
     
     return np.transpose(d_matrix)
 
@@ -186,18 +197,38 @@ def permutation_mat_list(ds_mat):
         sum_values = np.sum(sum_values, axis=0)
     return perm_mat_list, minval_list
 
-def locc_povm_func(final_state, ini_state):
+def locc_povm_func(final_state, ini_state):#, test_flag):
+    #maj_cehck = check_majorisation(final_state, ini_state)
     ds = create_ds_matrix(final_state, ini_state)
     perm_list, prob_list =  permutation_mat_list(ds)
     povm_list = []
     num_perm_mat = len(prob_list)
     dim_vec = len(final_state)
+    #if test_flag == 1:
+    #    print("ds size", np.shape(ds))
+    #    print("ds")
+    #    print(ds)
+    #    print(len(perm_list))
+        
     for i in range(num_perm_mat):
         povm = np.zeros((dim_vec, dim_vec))
         #print(perm_list[i])
         beta = 0
         beta = np.matmul(perm_list[i], final_state)
-        beta = beta/ini_state
+        #print(ini_state)
+        
+        if np.any(ini_state == 0):
+            #for j in range(len(ini_state)):
+            #    if ini_state[j] != 0:
+            #        beta[j] = beta[j]/ini_state[j]
+            #    else:
+            #        beta[j] = 0
+            raise Exception("initial state has a zero")
+        else: 
+            beta = beta/ini_state
+        if np.any(np.isnan(beta)):
+            print("error beta has nan")
+        
         beta = prob_list[i]*beta
 
         
@@ -206,7 +237,7 @@ def locc_povm_func(final_state, ini_state):
         np.fill_diagonal(povm, beta)
         #print(povm)
         povm_list.append(povm)
-        
+        #print(povm)
     return povm_list, prob_list, perm_list
 
 
@@ -228,21 +259,3 @@ def locc_povm_on_state(new_state, povm_out_list, perm_out_list):
         out_states.append(out_state)
     return out_states, out_probs
 
-"""new_state_dm is a density matrix"""
-def locc_povm_on_state2(new_state_dm, povm_out_list, perm_out_list):
-    out_states = []
-    out_probs = []
-    
-    for i in range(len(povm_out_list)):
-        
-        out_dm = np.matmul(np.sqrt(povm_out_list[i]), new_state_dm)
-        out_dm = np.matmul(out_dm, np.sqrt(povm_out_list[i]))
-        prob = np.trace(out_dm)
-        
-        out_dm = out_dm/prob
-        out_dm = np.matmul(np.transpose(perm_out_list[i]), out_dm)
-        out_dm = np.matmul(out_dm, (perm_out_list[i]))
-        
-        out_states.append(out_dm)
-        out_probs.append(prob)
-    return out_states, out_probs    

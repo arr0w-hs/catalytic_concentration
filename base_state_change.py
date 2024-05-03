@@ -15,9 +15,9 @@ from qutip.measurement import measure, measurement_statistics, measure_observabl
 
 import sys
 import os
-sys.path.append(os.path.abspath("//Users/hsharma4/Desktop/Multipartite state concentration/GHZ state project/robustness"))
-from locc_base import *
-from slocc_base import *
+sys.path.append(os.path.dirname(__file__))
+from base_locc import *
+from base_slocc import *
 
 def vec2dm(vector):
     vector1 = np.zeros(len(vector))

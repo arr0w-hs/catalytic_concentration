@@ -12,18 +12,20 @@ import numpy as np
 import scipy as sc
 import math as math
 import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 12})
 from qutip import *
 from qutip.measurement import measure, measurement_statistics, measure_observable
 import networkx as nx
 
 import sys
 import os
-sys.path.append(os.path.abspath("//Users/hsharma4/Desktop/Multipartite state concentration/GHZ state project/robustness"))
-from locc_base import *
-from slocc_base import *
-from state_change import *
-from catalyst import *
-from analysis_base import *
+sys.path.append(os.path.dirname(__file__))
+dir_name = os.path.dirname(__file__)
+from base_locc import *
+from base_slocc import *
+from base_state_change import *
+from base_catalyst import *
+from base_analysis import *
 
 fid = []
 prob = []
@@ -43,9 +45,9 @@ pro_nocat = []
 
 ops = [0.5, 0.5]
 
-x_lim = 0.701
+x_lim = 0.501
 y_lim = 0.501
-n = 50
+n = 100
 nx, ny = (n, n)
 x = np.linspace(x_lim, 0.9999, nx)
 y = np.linspace(y_lim, 0.9999, ny)
@@ -54,7 +56,7 @@ dc = 2
 k = 2
 cat_guess = np.random.randint(1, 100000, size=dc)
 cat_guess = cat_guess/np.linalg.norm(cat_guess, ord=1)
-
+probab = []
 cat_list = []
 for i in range(nx):
     #ips = np.asarray([1.498-x[i], x[i]-0.498])
@@ -79,10 +81,25 @@ for i in range(nx):
     cat_list.append(cat_guess)
     pro_cat.append(pro)
     pro_nocat.append(pronc)
+    ips_t = self_tensor_prod(ips, k)
+    #print(ips_t)
+    #print(cat_guess)
+    probab.append(prob_of_transformation2(cat_guess, ips_t))
+    
 print(np.shape(cat_list))
 
 
-    
+"""
+for i in range(nx):
+    ips = np.asarray([x[i], 1-x[i]])
+    ips = self_tensor_prod(ips, 2)
+    #print(ips)
+    #print(cat_list[i])
+"""
+
+x1 = np.linspace(x_lim, 0.9999, nx)
+plt.plot(x1, probab)
+"""
 for i in range(nx):
     print(i)
     #ips = np.asarray([1.498-x[i], x[i]-0.498])
@@ -143,16 +160,19 @@ prob = np.reshape(prob, [nx,ny])
 prob = np.flip(prob, (0))
 prob_cat = np.reshape(prob_cat, [nx,ny]) 
 prob_cat = np.flip(prob_cat, (0))
+"""
 
-
-x1 = np.linspace(x_lim, 0.99, nx)
+x1 = np.linspace(x_lim, 0.9999, nx)
 plt.figure()
-plt.plot(x1, pro_cat, x1, pro_nocat)
-plt.title('Max probability with catalyst')
+plt.plot(x1, probab, x1, pro_nocat)
+#plt.title('Probability comparison')
 plt.ylabel('Probability')
-plt.xlabel(r'Ideal state $\alpha$')
+plt.legend(["Catalytic probability", "Non-catalytic probability"])
+plt.xlabel(r'Initial state $\alpha$')
+plt.grid()
+#plt.savefig(dir_name+"/catalytic_prob_k2"+".png", dpi=1000, format="png")
 
-
+"""
 plt.figure()
 plt.imshow(fid, aspect = 'auto', interpolation='nearest', 
            extent = ( y_lim, 1, x_lim, 1), vmin=None, vmax=None)#,cmap='hot'
@@ -160,7 +180,7 @@ plt.colorbar()
 plt.title("Fidelity of SLOCC transformation")
 plt.ylabel(r'Ideal state $\alpha$')
 plt.xlabel(r"Initial state $\alpha$' ")
-#plt.savefig("/Users/hsharma4/Desktop/Multipartite state concentration/GHZ state project/robustness/imperfect_inistate/k3d2/fidelity"+".png", dpi=1000, format="png")
+#plt.savefig(dir_name+"/fidelity"+".png", dpi=1000, format="png")
 
 
 plt.figure()
@@ -170,7 +190,7 @@ plt.colorbar()
 plt.title("Fidelity of Catalytic SLOCC transformation")
 plt.ylabel(r'Ideal state $\alpha$')
 plt.xlabel(r"Initial state $\alpha$' ")
-#plt.savefig("/Users/hsharma4/Desktop/Multipartite state concentration/GHZ state project/robustness/imperfect_inistate/k3d2/fidelity_catalytic"+".png", dpi=1000, format="png")
+#plt.savefig(dir_name+"/fidelity_catalytic"+".png", dpi=1000, format="png")
 
 
 plt.figure()
@@ -180,7 +200,7 @@ plt.colorbar()
 plt.title("Probability of SLOCC transformation")
 plt.ylabel(r'Ideal state $\alpha$')
 plt.xlabel(r"Initial state $\alpha$' ")
-#plt.savefig("/Users/hsharma4/Desktop/Multipartite state concentration/GHZ state project/robustness/imperfect_inistate/k3d2/prob"+".png", dpi=1000, format="png")
+#plt.savefig(dir_name+"/prob"+".png", dpi=1000, format="png")
 
 
 plt.figure()
@@ -190,7 +210,7 @@ plt.colorbar()
 plt.title("Probability of Catalytic SLOCC transformation")
 plt.ylabel(r'Ideal state $\alpha$')
 plt.xlabel(r"Initial state $\alpha$' ")
-#plt.savefig("/Users/hsharma4/Desktop/Multipartite state concentration/GHZ state project/robustness/imperfect_inistate/k3d2/prob_catalytic"+".png", dpi=1000, format="png")
+#plt.savefig(dir_name+"/prob_catalytic"+".png", dpi=1000, format="png")
 
 
 plt.figure()
@@ -202,7 +222,7 @@ plt.colorbar()
 plt.title("Ratio of probability of Catalytic SLOCC transformation")
 plt.ylabel(r'Ideal state $\alpha$')
 plt.xlabel(r"Initial state $\alpha$' ")
-#plt.savefig("/Users/hsharma4/Desktop/Multipartite state concentration/GHZ state project/robustness/imperfect_inistate/k3d2/ratio_prob"+".png", dpi=1000, format="png")
+#plt.savefig(dir_name+"/ratio_prob"+".png", dpi=1000, format="png")
 
 
 plt.figure()
@@ -214,7 +234,7 @@ plt.colorbar()
 plt.title("Ratio of fidelities of SLOCC transformation")
 plt.ylabel(r'Ideal state $\alpha$')
 plt.xlabel(r"Initial state $\alpha$' ")
-#plt.savefig("/Users/hsharma4/Desktop/Multipartite state concentration/GHZ state project/robustness/imperfect_inistate/k3d2/ratio_fidelity"+".png", dpi=1000, format="png")
+#plt.savefig(dir_name+"/ratio_fidelity"+".png", dpi=1000, format="png")
 
 plt.figure()
 #x = np.linspace(x_lim, 0.999, nx)
@@ -225,7 +245,7 @@ plt.title('Curvature of fidelity plot')
 plt.legend(["No catalyst", "catalyst"])
 plt.ylabel('Curvature')
 plt.xlabel(r'Ideal state $\alpha$')
-#plt.savefig("/Users/hsharma4/Desktop/Multipartite state concentration/GHZ state project/robustness/imperfect_inistate/k3d2/curvature"+".png", dpi=1000, format="png")
+#plt.savefig(dir_name+"/curvature"+".png", dpi=1000, format="png")
 
 
 plt.figure()    
@@ -234,9 +254,9 @@ plt.title('Error for >0.95 fidelity')
 plt.ylabel('Allowed error in Initial state (%)')
 plt.xlabel(r'Ideal state $\alpha$')
 plt.legend(["No catalyst", "catalyst"])
-#plt.savefig("/Users/hsharma4/Desktop/Multipartite state concentration/GHZ state project/robustness/imperfect_inistate/k3d2/FW0.9M"+".png", dpi=1000, format="png")
+#plt.savefig(dir_name+"/FW0.9M"+".png", dpi=1000, format="png")
 
-"""
+
 plt.figure()
 plt.plot(x, left_wid, x, left_wid_cat)
 #plt.yscale('log')
@@ -244,7 +264,7 @@ plt.title('Width at 0.9*maximum')
 plt.ylabel('Width on the left')
 plt.xlabel(r'Ideal state $\alpha$')
 plt.legend(["No catalyst", "catalyst"])
-#plt.savefig("/Users/hsharma4/Desktop/Multipartite state concentration/GHZ state project/robustness/imperfect_inistate/k2d2/left_width"+".png", dpi=1000, format="png")
+#plt.savefig(dir_name+"/left_width"+".png", dpi=1000, format="png")
 
 
 plt.figure()
@@ -254,5 +274,5 @@ plt.title('Width at 0.9*maximum')
 plt.ylabel('Width on the right')
 plt.xlabel(r'Ideal state $\alpha$')
 plt.legend(["No catalyst", "catalyst"])
-#plt.savefig("/Users/hsharma4/Desktop/Multipartite state concentration/GHZ state project/robustness/imperfect_inistate/k2d2/right_width"+".png", dpi=1000, format="png")
+#plt.savefig(dir_name+"/right_width"+".png", dpi=1000, format="png")
 """
