@@ -35,9 +35,9 @@ from bqskit.qis import UnitaryMatrix
 
 
 
-
+xx = 0.85
 ops = [0.5, 0.5]
-ips = [0.85, 0.15]
+ips = [xx, 1-xx]
 
 
 ips = self_tensor_prod(ips, 3)
@@ -46,17 +46,22 @@ ops = concat_zeros(ops, ips)
 gamma_ideal = func_for_gamma(ops, ips)
 
 povm_out_list, prob_out_list_junk, perm_out_list = locc_povm_func(gamma_ideal,
-                                                             ips)
+                                                         ips)
 
-#print(perm_out_list[2])
 
-syn_circuit = compile(perm_out_list[0])#, max_synthesis_size = 2)
+for i, ele in enumerate((povm_out_list)):
+    vertices = np.nonzero(ele)
+    print(vertices)
 
-syn_circuit.compress()
-gate_dict = syn_circuit.gate_counts
+print(len(povm_out_list), "number of operators in povm")
+#print(povm_out_list[0])
+#syn_circuit = compile(perm_out_list[0])#, max_synthesis_size = 2)
+
+#syn_circuit.compress()
+#gate_dict = syn_circuit.gate_counts
 #print(gate_dict.values())
-cnot_count = list(gate_dict.values())[1]
-print(cnot_count)
+#cnot_count = list(gate_dict.values())[1]
+#print(cnot_count)
 #print(syn_circuit.gate_counts)
 #print(syn_circuit.num_cycles)
 #print(syn_circuit.depth)
