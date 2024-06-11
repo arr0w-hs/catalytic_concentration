@@ -24,12 +24,7 @@ from base_distillation import distillation, dejmps
 
 import numpy as np
 import pandas as pd
-
-
 plt.rcParams.update({'font.size': 12})
-
-
-
 
 
 g = 8.38
@@ -94,7 +89,7 @@ fip_dist_list = []
 fip_dames_list = []
 fip_cat_reuse_list = []
 
-n = 2000
+n = 200
 repeat = 50
 flag = 0
 
@@ -124,7 +119,7 @@ for i in range(n):
     final_state, final_state_loss, prob_final_state, prob_final_loss, mea_value = prepare_dm_withreset(
             psn_dm, cnot_errore, rr, lvec, num_reset, sqe_error, dist)
 
-    if mea_value != 15:
+    if mea_value != 10:
         continue
 
     ideal_state, ideal_state_loss, prob_ideal, prob_loss, mea_list_ideal = prepare_dm_withreset(psn_dm, cnot_errore_ideal,

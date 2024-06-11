@@ -16,8 +16,8 @@ plt.rcParams.update({'font.size': 12})
 sys.path.append(os.path.dirname(__file__))
 dir_name = os.path.dirname(__file__)
 
-#data_location = '/2024-04-25_cat_disti_comparison/20240'
-data_location = '/2024-04-29_depol_channel_comparison/16531'
+data_location = '/2024-05-29_cat_disti_comparison/151057'
+#data_location = '/2024-04-29_depol_channel_comparison/16531'
 with open(dir_name+'/data'+data_location+'.pkl', 'rb') as f:
     data_dict_loaded = pickle.load(f)
     f.close()
@@ -25,8 +25,9 @@ with open(dir_name+'/data'+data_location+'.pkl', 'rb') as f:
 print(data_dict_loaded.keys())
 
 fid_raw_list = data_dict_loaded["fid_raw_list"]
-alpha_list = data_dict_loaded["alpha_list"]
-prob_in_state_list = data_dict_loaded["prob_in_state_list"]
+#alpha_list = data_dict_loaded["alpha_list"]
+#prob_in_state_list = data_dict_loaded["prob_in_state_list"]
+prob_in_state_list = data_dict_loaded["fid_raw_list"]
 
 x1 = np.linspace(np.min(fid_raw_list), 0.95, 100)
 

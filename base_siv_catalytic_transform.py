@@ -36,7 +36,7 @@ def slocc_povm_on_dm_qobj(gamma_new_dm, povm_mat):
     prob = np.trace(out_dm)
     if prob > 1.001:
 
-        print("Error")
+        print("Error: prob greater than 1")
 
     if prob != 0:
         out_dm = out_dm/prob
@@ -158,12 +158,12 @@ def pre_conversion_process(prepared_dm):
 
     s_coeff, prepared_dm_schmidt_basis, pure_st = schmidt_decomp_of_dm(prepared_dm)
     s_coeff = np.reshape(s_coeff, [4])
-    print(s_coeff)
+    #print(s_coeff)
     """finding and making the catalyst for the pure statestate"""
     output_states = [0.5, 0.5]
     carbon_st, psnc_dm, psnc_st, cat_array, cat_gain = prepare_carbon_spins(
         output_states, s_coeff, prepared_dm_schmidt_basis, pure_st)
-    print(cat_array)
+    #print(cat_array)
     psnc_st, basis_mat_cat, ss_cat = basis2schmidt(psnc_st)
     psnc_dm = basis_mat_cat * psnc_dm * basis_mat_cat.dag()
     
@@ -199,6 +199,7 @@ def catalytic_conversion(prepared_dm):
         print(input_state_array, "input")
         print(gamma_ideal, "gamma")
         print(carbon_st, "carbon")
+        print("input state array has a 0")
     """use function for locc povms to find the ideal povms to get to gamma"""
     povm_out_list, prob_out_list_junk, perm_out_list = locc_povm_func(gamma_ideal,
                                                                  input_state_array)
@@ -403,6 +404,7 @@ def catalytic_conversion_reuse2(prepared_dm, carbon_dm_input):
         print(input_state_array, "input")
         print(gamma_ideal, "gamma")
         print(carbon_st, "carbon")
+        print("input state has a 0")
     """use function for locc povms to find the ideal povms to get to gamma"""
     povm_out_list, prob_out_list_junk, perm_out_list = locc_povm_func(gamma_ideal,
                                                                  input_state_array)

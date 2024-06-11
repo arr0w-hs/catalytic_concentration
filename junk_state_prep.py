@@ -796,3 +796,35 @@ x = x.full()
 x = Qobj(x)
 #print(x)
 #print(x*ab)
+
+
+
+def locc_povm_func4(final_state, ini_state):
+    """function for creating list of povm and permutation matrices"""
+    
+
+    ds_function_output = create_ds_tlist(final_state, ini_state)
+    ds_matrix = ds_function_output[0]
+    perm_list, prob_list =  permutation_mat_list(ds_matrix)
+    povm_list = []
+    num_perm_mat = len(prob_list)
+    dim_vec = len(final_state)
+
+
+    for i in range(num_perm_mat):
+        povm = np.zeros((dim_vec, dim_vec))
+        beta = 0
+        beta = np.matmul(perm_list[i], final_state)
+
+
+        assert not np.any(np.array(ini_state) == 0)
+        
+        beta = beta/ini_state
+        assert not np.any(np.isnan(np.array(beta)))
+        
+        beta = prob_list[i]*beta
+
+        np.fill_diagonal(povm, beta)
+        povm_list.append(povm)
+
+    return povm_list, prob_list, perm_list
