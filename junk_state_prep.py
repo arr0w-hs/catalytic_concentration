@@ -828,3 +828,46 @@ def locc_povm_func4(final_state, ini_state):
         povm_list.append(povm)
 
     return povm_list, prob_list, perm_list
+
+
+ops_list1 = comm_round_op_state(ops, ips)
+#povm_round_list, ops_dm_list = round_povm_func(ops_list)
+#print(len(ops_list))
+number_of_communication_rounds = len(ops_list1)-1
+operation_list = []
+for k in range(number_of_communication_rounds):#len(ops_list)-1
+    #print(j)
+    one_round_operation = []
+    inp_state = ops_list1[k]
+    oup_state = ops_list1[k+1]
+
+    """for each round we use the one_round_povm_func to get the povms
+    of that round"""
+
+    output = one_round_povm_func(oup_state, inp_state)
+    povms = output[0]
+    permutations = output[1]
+    #print(len(permutations))
+    #print(povms[0])
+    #print(povms[1])
+
+    """for each comm round we get a list of unitaries
+    these unitaries are orthogonal and are used to make 
+    the final unitary"""
+
+    ut_list = unitary_on_auxiliray(povms)
+
+    """we get the final unitary for initializing data+auxiliary qubits
+    for each round of communication separately"""
+    ut_final = one_round_unitary(3, ut_list)
+    #print(len(ut_list))
+    #print(ut.dag()*ut)
+    #print(ut)
+    #print(len(povms))
+    one_round_operation.append(ut_final)
+    one_round_operation.append(permutations)
+    operation_list.append(one_round_operation)
+    """measuring the aux qubits"""
+
+
+print((operation_list[6][1]))

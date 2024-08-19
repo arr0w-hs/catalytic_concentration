@@ -48,13 +48,18 @@ def ent_mono2(vec, m_begin, m_end):
 
 def concat_zeros(out_state, in_state):
     """func for concating zeros in output state"""
-
-    if np.shape(in_state)[0] >= np.shape(out_state)[0]:
-        extra_zeros = np.zeros(np.shape(in_state)[0] - np.shape(out_state)[0])
-        out_state = np.concatenate((out_state, extra_zeros), axis=None)
+    #print((out_state) )
+    #print(np.shape(in_state)[0])
+    shape_in_state = np.shape(in_state)[0]
+    shape_out_state = np.shape(out_state)[0]
+    if np.shape(out_state)[0] > 1:
+        if np.shape(in_state)[0] >= np.shape(out_state)[0]:
+            extra_zeros = np.zeros(np.shape(in_state)[0] - np.shape(out_state)[0])
+            out_state = np.concatenate((out_state, extra_zeros), axis=None)
+        else:
+            raise Exception("Incoherent dimensions of states")
     else:
-        raise Exception("Incoherent dimensions of states")
-    
+        raise Exception("af")
     #out_state = np.sort(out_state)[::-1]
     
     return out_state

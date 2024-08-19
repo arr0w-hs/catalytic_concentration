@@ -15,9 +15,9 @@ from qutip import *
 #from qutip.measurement import measure, measurement_statistics, measure_observable
 
 sys.path.append(os.path.dirname(__file__))
-from base_slocc import *
-from base_locc import *
-from base_state_change import *
+from base_slocc import concat_zeros, self_tensor_prod
+from base_locc import locc_povm_func, k_t_transform, create_t_matrix, locc_povm_on_state
+from base_state_change import vec2dm
 
 def create_ds_tlist(final_state, input_state):
     """
@@ -31,7 +31,8 @@ def create_ds_tlist(final_state, input_state):
     """
 
     final_state = concat_zeros(final_state, input_state)
-
+    #print(final_state)
+    #print(input_state)
     count = 0
     assert (len(final_state) <=  len(input_state))
         #raise Exception("Incoherent dimensions of states")
@@ -44,6 +45,10 @@ def create_ds_tlist(final_state, input_state):
 
         k_val, t_val, = k_t_transform(ops_temp, ips_temp)
 
+        #print(k_val, t_val)
+        #if t_val == 1:
+        #   continue
+
         d_matrix_temp = create_t_matrix(t_val, 0, k_val, ips_temp)
         ops_temp = np.matmul(d_matrix_temp, ops_temp)
         #print(ops_temp)
@@ -53,7 +58,7 @@ def create_ds_tlist(final_state, input_state):
         t_matrix = np.block([[small_identity_matrix, np.zeros((count, s_temp))],
                   [np.zeros((s_temp, count)), d_matrix_temp]
                   ])
-
+        #print(t_matrix)
         d_matrix = np.matmul(d_matrix, t_matrix)
 
         t_list.append(t_matrix)
@@ -79,76 +84,51 @@ def comm_round_op_state(final_state, ini_state):
     ops_temp = final_state
 
     ops_list = []
-    ops_list.append(ops_temp)
+    ops_list.append(np.asarray(ops_temp))
     for i, ele in enumerate(ts_list):
-
+        #print(ele)
         ops_temp = np.matmul(ele, ops_temp)
         #ops_temp = np.sort(ops_temp)[::-1]
         ops_list.append(ops_temp)
         ini_state = ops_temp
-
+    #print(ops_list)
     ops_list.reverse()
     ops_compact_list = []
     for i, ele in enumerate((ops_list)):
         ops_compact_list.append(ele[ele != 0])
 
+    #print(" ")
+    #print(ops_compact_list)
     return ops_compact_list
 
 
-def round_povm_func(round_ops_list):
-    """
-    povm function for all the rounds
-
-    returns: list of povm and ooutput state density matrix
-    """
-
-    povm_round_list = []
-    ops_dm_list = []
-    for i in range(len(round_ops_list)-1):
-
-        ip_state = round_ops_list[i]
-        op_state = round_ops_list[i+1]
-        op_state = concat_zeros(op_state, ip_state)
-        output_locc_povm_func = locc_povm_func(op_state, ip_state)
-        povm_out_list = output_locc_povm_func[0]
-        perm_out_list = output_locc_povm_func[2]
-
-        output_locc_povm_on_state = locc_povm_on_state(ip_state,  povm_out_list, perm_out_list)
-        ops_obtained_list = output_locc_povm_on_state[0]
-        prob_obtained_list = output_locc_povm_on_state[1]
-
-        povm_round_list.append(povm_out_list)
-
-        ops_dm = 0
-
-        assert len(ops_obtained_list) != 0
-
-        #if len(ops_obtained_list) == 0:
-        #   raise Exception ("output state failed to obtained")
-
-        num_ops_obtained = len(ops_obtained_list)
-        for i in range(num_ops_obtained):
-            ops_dm += prob_obtained_list[i]*vec2dm(ops_obtained_list[i])
-        ops_dm_list.append(ops_dm)
-
-    return povm_round_list, ops_dm_list
-
-def one_round_povm_func(op_state, ip_state):
+def one_round_povm_func(op_state, ip_state):#, num_qubits):
     """
     povm function for just one round
 
-    returns: list of povm and ooutput state density matrix
+    returns: list of povm and output state density matrix
     """
-
+    #print(len(ip_state))
+    #dummy_inital_state = [1]*2**num_qubits
+    #ip_state = concat_zeros(ip_state, dummy_inital_state)
     op_state = concat_zeros(op_state, ip_state)
     output_locc_povm_func = locc_povm_func(op_state, ip_state)
     povm_out_list = output_locc_povm_func[0]
     perm_out_list = output_locc_povm_func[2]
-
+    #print(len(perm_out_list))
+    for i, ele in enumerate(perm_out_list):
+        #print(type(ele))
+        perm_out_list[i] = np.transpose(ele)
+    #print(perm_out_list)
+    
+    
+    
+    
+    
     output_locc_povm_on_state = locc_povm_on_state(ip_state,  povm_out_list, perm_out_list)
     ops_obtained_list = output_locc_povm_on_state[0]
     prob_obtained_list = output_locc_povm_on_state[1]
-
+    
     #povm_out_list, prob_out_list, perm_out_list = locc_povm_func(op_state, ip_state)
     #ops_obtained_list, prob_obtained_list
     #= locc_povm_on_state(ip_state,  povm_out_list, perm_out_list)
@@ -156,8 +136,10 @@ def one_round_povm_func(op_state, ip_state):
     #povm_round_list.append(povm_out_list)
 
     ops_dm = 0
-    if len(ops_obtained_list) == 0:
-        raise Exception ("output state failed to obtained")
+
+    assert len(ops_obtained_list) != 0
+    #if len(ops_obtained_list) == 0:
+    #    raise Exception ("output state failed to obtained")
 
     for i, ele in enumerate(ops_obtained_list):
         ops_dm += prob_obtained_list[i]*vec2dm(ele)
@@ -165,153 +147,156 @@ def one_round_povm_func(op_state, ip_state):
 
     return povm_out_list, perm_out_list, output_locc_povm_func[1], ops_dm
 
-def unitary_on_aux(povm_set):
+def unitary_on_auxiliary(povm_set):
     """
     takes the set of dxd dimensional povm with only two elements
-    and makes a unitary to be applied on the auxiliary qubit
+    and makes a unitary to be applied on the data + auxiliary qubit
 
     returns: a list of the unitaries equal to the dimensions of the povms
     """
-
+    #print((povm_set))
     assert len(povm_set) == 2
 
-    dim_povm_ele = np.shape(povms[0])[0]
+    dim_povm_ele = np.shape(povm_set[0])[0]
 
-
-    unitary_final = 0
     unitary_list = []
     for i in range(dim_povm_ele):
 
-        povm_ele0 = povms[0]
-        povm_ele1 = povms[1]
+        povm_ele0 = povm_set[0]
+        povm_ele1 = povm_set[1]
 
         unitary_temp = np.zeros((2,2))
 
-        unitary_temp[0,0] = np.sqrt(povm_ele0[i,i])
-        unitary_temp[1,0] = np.sqrt(povm_ele1[i,i])
-        unitary_temp[0,1] = 1*np.sqrt(povm_ele1[i,i])
-        unitary_temp[1,1] = -1*np.sqrt(povm_ele0[i,i])
-
+        unitary_temp[0,0] = np.sqrt(povm_ele0[i,i])#a
+        unitary_temp[1,0] = np.sqrt(povm_ele1[i,i])#c
+        unitary_temp[0,1] = 1*np.sqrt(povm_ele1[i,i])#b
+        unitary_temp[1,1] = -1*np.sqrt(povm_ele0[i,i])#d
+        unitary_temp = np.real(unitary_temp)
+        #print(unitary_temp)
         unitary_temp = Qobj(unitary_temp)
         unitary_list.append(unitary_temp)
+
     return unitary_list
 
-def total_unitary(num_qubits, unitary_list):
+def one_round_unitary(num_qubits, unitary_list):
     """
     takes in the number of data qubits and list of the unitaries to make
     a unitary on the space of all the data qubits and auxiliary qubits
 
-    returns: unitary on all the qubits
+    returns: big unitary on all the data qubits + auxiliary
     """
 
     unitary_final = 0
+    max_num_unitaries = int(2**num_qubits)
     num_unitaries = len(unitary_list)
-    for i in range(num_unitaries):
 
+    for i in range(max_num_unitaries):
         binary_val = np.binary_repr(i, width=num_qubits)
-        qubit = ket2dm(basis(2, int(binary_val[0])))
+
+        """qubit dm is the state of the data qubits for a certain unitary"""
+        qubit_dm = ket2dm(basis(2, int(binary_val[0])))
         for j in range(num_qubits-1):
             initialized_qubit1 = basis(2, int(binary_val[j+1]))
-            qubit = tensor(qubit, ket2dm(initialized_qubit1))
-
-        unitary_temp = tensor(qubit, unitary_list[i])
+            qubit_dm = tensor(qubit_dm, ket2dm(initialized_qubit1))
+        
+        """unitary temp is the tensor product of data qubit initializations
+           and the unitary on the data qubit"""
+        if i < num_unitaries:
+            unitary_temp = tensor(qubit_dm, unitary_list[i])
+        else:
+            unitary_temp = tensor(qubit_dm, qeye(2))
+        
+        """unitary final is the unitary on data + aux qubits"""
         unitary_final += unitary_temp
 
     return unitary_final
 
-if __name__ == "__main__":
+def locc_operations(final_state, input_state):
+    """
+    function which takes in the output and input states
 
-    ips = [0.7, 0.3]
-    ips = self_tensor_prod(ips, 3)
+    returns: for each of the rounds it returns
+            (1) unitary qobj on data qubits and auxiliary qubits
+            (2) two permutations corresponding to two measurement results of auxiliary
+    """
+    num_qubits = int(np.ceil(np.log2(len(input_state))))
+    out_state_list = comm_round_op_state(final_state, input_state)
+    #print(out_state_list)
+    number_of_communication_rounds = len(out_state_list)-1
 
-    ops = [0.5, 0.5]
-    ops = concat_zeros(ops, ips)
+    operation_list = []
 
-
-    ops_list1 = comm_round_op_state(ops, ips)
-    #povm_round_list, ops_dm_list = round_povm_func(ops_list)
-    #print(len(ops_list))
-    number_of_communication_rounds = len(ops_list1)-1
-
-    for k in range(number_of_communication_rounds):#len(ops_list)-1
-        #print(j)
-        inp_state = ops_list1[k]
-        oup_state = ops_list1[k+1]
-
+    for k in range(number_of_communication_rounds):
+        one_round_operation = []
+        inp_state = out_state_list[k]
+        #print(inp_state, "in state")
+        out_state = out_state_list[k+1]
+        #print(out_state, "out state")
+        #print(" ")
         """for each round we use the one_round_povm_func to get the povms
         of that round"""
-
-        output = one_round_povm_func(oup_state, inp_state)
+        #print(out_state)
+        #print(inp_state)
+        output = one_round_povm_func(out_state, inp_state)#, num_qubits)
         povms = output[0]
         permutations = output[1]
-        #print(povms[0])
-        #print(povms[1])
-
+        #print(permutations)
+        
+        """we continue in case povms have only one element that is identity"""
+        if len(povms) == 1:
+            #print(np.shape(povms[0]))
+            print(np.array_equal(povms[0], qeye(np.shape(povms[0])[0])),  "the povm element is identity")
+            #print(povms[0])
+           # print(permutations)
+            #one_round_operation.append(povms)
+            #one_round_operation.append(permutations)
+            #print("identity in povm elements")
+            #print(permutations)
+            continue
         """for each comm round we get a list of unitaries
-        these unitaries are orthogonal and are used to make the final unitary"""
+        these unitaries are orthogonal and are used to make
+        the final unitary list"""
 
-        ut_list = unitary_on_aux(povms)
+        ut_list = unitary_on_auxiliary(povms)
 
-        """we get the final unitary for initializing data+auxiliary qubits"""
-        ut = total_unitary(3, ut_list)
-        print(len(ut_list))
-        print(ut.dag()*ut)
+        """we get the final unitary for initializing data+auxiliary qubits
+        for each round of communication separately"""
+        ut_final = one_round_unitary(num_qubits, ut_list)
+
+        #print(ut.dag()*ut)
         #print(len(povms))
-
+        one_round_operation.append(ut_final)
+        one_round_operation.append(permutations)
+        operation_list.append(one_round_operation)
         """measuring the aux qubits"""
 
 
-
-        """
-
-        number_qubits = int(np.ceil(np.log2(len(ips))))
-        print(number_qubits)
-        binary_val = np.binary_repr(i, width=number_qubits)
-        #print(binary_val)
-        #binary_val = f'{i:03b}'
-        #print(i)
-        #print(binary_val[0])
-        #print(binary_val[1])
-
-        qubit = 1
-
-        for ii in range(number_qubits-1):
-
-            initialized_qubit0 = basis(2, int(binary_val[ii]))
-            initialized_qubit1 = basis(2, int(binary_val[ii+1]))
-            qubit = tensor(ket2dm(initialized_qubit0), ket2dm(initialized_qubit1))
+    #print((operation_list))
+    #assert len(operation_list) == number_of_communication_rounds
+    return operation_list
 
 
-        #qubit0_dm = ket2dm(basis(2, int(binary_val[0])))
-        #qubit1_dm = ket2dm(basis(2, int(binary_val[1])))
-        #qubit2_dm = ket2dm(basis(2, int(binary_val[2])))
-        #print(state_qubit0)
+def slocc_unitary(slocc_povm):
+    
+    num_qubits = int(np.ceil(np.log2(np.shape(slocc_povm[0])[0])))
+    #print(len(slocc_povm))
+    ut_list = unitary_on_auxiliary(slocc_povm)
 
-        unitary_final += tensor(qubit, unitary_temp)
-
-        #print(unitary_final*unitary_final.dag())
-    #print(ops_list)
-    #print(ops_dm_list)
-
-    #print()
-    #print("fafa")
-
-    #for i, ele in enumerate(povm_round_list):
-    #
-    #    print(ele[0])
-    #    print(ele[1])
+    """we get the final unitary for initializing data+auxiliary qubits
+    for each round of communication separately"""
+    slocc_unitary = one_round_unitary(num_qubits, ut_list)
+    
+    #print(slocc_unitary*slocc_unitary.dag())
+    
+    return slocc_unitary
 
 
+if __name__ == "__main__":
 
+    ips = [0.85, 0.15]
+    ips = self_tensor_prod(ips, 3)
 
+    ops = [0.6141249999999999, 0.385875]
+    ops = concat_zeros(ops, ips)
 
-    #print(len(povm_round_list))
-
-    #print(povm_round_list[0][1]+povm_round_list[0][0])
-    #print(povm_round_list[0][0])
-    #print(povm_round_list[1][1]+povm_round_list[1][0])
-    #print(povm_round_list[1][0])
-    #print(povm_round_list[2][1]+povm_round_list[2][0])
-    #print(povm_round_list[2][0])
-        #print(gamma_density_mat)
-"""
+    locc_operations(ops, ips)

@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Dec  4 11:03:48 2023
+Created on Wed Jun 26 17:08:59 2024
 
 @author: hsharma4
-for creating simulation data for comparison between 
-(non-) catalytic locc and distillation
+for comparing the opearational errors in slocc and distillation
 """
 import sys
 import os
@@ -30,7 +29,7 @@ plt.rcParams.update({'font.size': 12})
 g = 8.38
 gamma_0 = 0.123
 gamma_1 = 0.123
-delta = 24
+delta = 248
 kappa = 21.8
 loss_coeff = 0.05
 param = [kappa,0,g,gamma_0,gamma_1,delta,0]
@@ -120,82 +119,13 @@ for i in range(n):
 
     if mea_value != 15:
         continue
-    print("faksjf;alsfj")
-
-    #print(final_state[10, 10])
-
-    ideal_state, ideal_state_loss, prob_ideal, prob_loss, mea_list_ideal = prepare_dm_withreset(psn_dm, cnot_errore_ideal,
-                                          rr_ideal, lvec_ideal, 0, [0, 0, 0], 0)
-    #swc, afadf, aadsg = schmidt_decomp_of_dm(final_state)
-    #swc_ideal, adfa, adfadsfasdfasfasf = schmidt_decomp_of_dm(ideal_state)
-    ops = [0.5, 0.5]
-    #print(ideal_state)
-
-    istate = ideal_state.full()
-
-
-    #print(ideal_state)
-
-    #print(adgajf)
-
-    fid_cat, prob_cat, post_locc_state, carbon_cat_st = catalytic_conversion(final_state)
-    fid_nocat, prob_nocat, post_locc_state_nocat = non_catalytic_conversion(final_state)
-    fid_dist, prob_dist, _ = distillation(final_state, ideal_state, 0)
-    fid_dames, prob_dames = dejmps(final_state, 0)
     
-    cat_post = post_locc_state.ptrace([2,5])
-    #print(post_locc_state.ptrace([1,4]))
-    #print(post_locc_state.ptrace([2,5]))
-    #print(post_locc_state.ptrace([3,6]), "post locc qobj")
-    fid_reuse, prob_reuse, out_state_reuse, flag = catalytic_conversion_reuse(final_state, cat_post)
-
-
-    fid_cat_list.append(1-fid_cat)
-    fid_nocat_list.append(1-fid_nocat)
-    fid_dist_list.append(1-fid_dist)
-    fid_dames_list.append(fid_dames)
-    fid_cat_reuse_list.append(1-fid_reuse)
-
-    prob_cat_list.append(prob_cat)
-    prob_nocat_list.append(prob_nocat)
-    prob_dist_list.append(prob_dist)
-    prob_dames_list.append(prob_dames)
-    prob_cat_reuse_list.append(prob_reuse)
     
-    fip_cat_list.append(fid_cat*prob_cat)
-    fip_nocat_list.append((fid_nocat*prob_nocat))
-    fip_dist_list.append(fid_dist*prob_dist)
-    fip_dames_list.append(fid_dames*prob_dames)
-    fip_cat_reuse_list.append(fid_reuse*prob_reuse)
-    
-    cat_state.append((carbon_cat_st[0]))
-    cat_fid_post = fidelity(carbon_cat_st, cat_post)
-    cat_fidelity.append(cat_fid_post)
-
-
-    bell_st = 1/np.sqrt(2)*(tensor(basis(2,0), basis(2,0)) + tensor(basis(2,1), basis(2,1)))
-    raw_fid = np.sqrt(fidelity(ideal_state, final_state))
-    fid_raw_one.append(fidelity(bell_st, final_state.ptrace([1,3])))
-    fid_raw_two.append(fidelity(bell_st, final_state.ptrace([2,4])))
-    fid_raw_list.append((raw_fid))
-    print(np.sqrt(fidelity(ideal_state.ptrace([1,3]), bell_st)))
-    print(np.sqrt(fidelity(ideal_state.ptrace([2,4]), bell_st)))
-
-    x.append(i)
-
-    #gain_list.append(catalyst_gain)
-
-    cnot_err_list.append(cnot_err)
-    sqe_list.append(single_err)
-    loss_coeff_list.append(loss_coeff)
-    kap.append(kappa)
-    distance_list.append(dist)
-    delta_list.append(delta)
 
 plt.figure()
 plt.grid()
 plt.scatter(loss_coeff_list, fid_raw_list, s = 5, c = "blue")
-
+print(stop)
 data_dict = {
     "param": param,
     "num_reset": num_reset,

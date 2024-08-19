@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Mar 27 14:57:56 2024
+Created on Tue Jun 25 09:34:54 2024
 
 @author: hsharma4
 """
+
 import sys
 import os
 import time
@@ -12,15 +13,16 @@ import time
 import pickle
 import matplotlib.pyplot as plt
 import numpy as np
+from qutip import *
 sys.path.append(os.path.dirname(__file__))
 dir_name = os.path.dirname(__file__)
 
-from bqskit.passes import LEAPSynthesisPass as sp
-from base_locc import *
-from base_slocc import *
-from base_state_change import *
-from base_siv_state_prep import *
-from base_catalyst import *
+#from bqskit.passes import LEAPSynthesisPass as sp
+#from base_locc import *
+from base_slocc import self_tensor_prod, concat_zeros, func_for_gamma
+#from base_state_change import *
+from base_siv_state_prep import err_cenotn
+#from base_catalyst import *
 
 from base_locc_alt import locc_operations
 
@@ -29,7 +31,7 @@ from qiskit.compiler import transpile
 
 from bqskit import compile
 from bqskit.ir.circuit import Circuit
-from bqskit.ir import Gate
+from bqskit.ir import Gate, Operation
 from bqskit.ir.gates import CNOTGate, CRXGate, CZGate
 
 from bqskit.compiler import Compiler
@@ -40,21 +42,23 @@ from bqskit.passes import UnfoldPass
 from bqskit.qis import UnitaryMatrix
 
 
-def err_sq_cir(input_gate, error_rate):
+def err_sq_gate(input_gate, error_rate):
     """
     function for adding under_over_rotations to single qubnit gates
     """
     i = 0
+    #print(input_gate.get_unitary(), "ig")
+    #print(type(input_gate))
     gate_params = input_gate.params
     for ele_param in gate_params:
         gate_params[i] += np.random.normal(loc = 0., scale = error_rate)
         i += 1
         
     input_gate.params = gate_params
-    input_gate_unitary = 0
-    
-    output_cir = compile(input_gate.get_unitary())
-    return output_cir
+    #input_gate_unitary = 0
+    #print(input_gate.get_unitary(),"og")
+    #print(type(input_gate))
+    return input_gate
 
 def err_cnot_circuit(error_rate):
     """
@@ -83,14 +87,23 @@ def error_circuit(input_circuit, sq_err, cnot_err):
     output_circuit = Circuit(input_circuit.num_qudits, input_circuit.radixes)
     
     for ele in input_circuit:
-        if (ele.gate) == "CNOTGate":
-            err_cnot_cir = err_cnot_circuit(cnot_err)
-            output_circuit.append_circuit(err_cnot_cir, ele.location)
-        else:
-            err_sqg = err_sq_cir(ele, sq_err)
+        if str(ele.gate) == "CNOTGate":
+            #print(type(ele))
+            print(input_circuit.point(ele))
+            replacement_point = input_circuit.point(ele)
+            replacement_gate = Gate(err_cenotn(cnot_err).full())
+            replacement_operation = Operation(replacement_gate, ele.location)
+            print(type(replacement_operation), "op_type")
+            input_circuit.replace(replacement_point, replacement_operation)
+            
+            #err_cnot_cir = err_cnot_circuit(cnot_err)
+            #output_circuit.append_circuit(err_cnot_cir, ele.location)
+        elif str(ele.gate) == "U3Gate":
+            #print(type(ele))
+            err_sqg = err_sq_gate(ele, sq_err)
             
 
-            output_circuit.append_circuit(err_sqg, ele.location)
+            #output_circuit.append_gate(err_sqg, ele.location)
     
     return output_circuit
     
@@ -118,34 +131,6 @@ def error_unitary(unitary, sq_error_rate, cnot_error_rate, catalyst_flag):
     return output_unitary
 
 
-
-def extend_perm(perm_list, initial_state):
-    
-    required_len = len(initial_state)
-    #print(required_len)
-    extended_perm_list = []
-    for i in range(len(perm_list)):
-        
-        perm_mat = perm_list[i]
-        perm_len = np.shape(perm_mat)[0]
-        #print(perm_mat)
-        extra_len = int(required_len-perm_len)
-        
-        identity_temp = np.eye(extra_len)
-        
-        side_zeros = np.zeros((perm_len, extra_len))
-        lower_zeros = np.zeros((extra_len, perm_len))
-        #print(identity_temp, side_zeros, lower_zeros)
-        extended_perm_mat = np.block([[perm_mat, side_zeros],
-                  [lower_zeros, identity_temp]
-                  ])
-        extended_perm_list.append(extended_perm_mat)
-        #print(extended_perm_mat)
-        
-    return extended_perm_list
-    
-    
-
 if __name__ == "__main__":
     #err_cnot_circuit(0.01)
     x = []
@@ -161,7 +146,7 @@ if __name__ == "__main__":
     ips = [xx, 1-xx]
     
     
-    ips = self_tensor_prod(ips, 3)
+    ips = self_tensor_prod(ips, 2)
     ops = concat_zeros(ops, ips)
     
     gamma_ideal = func_for_gamma(ops, ips)
@@ -169,41 +154,29 @@ if __name__ == "__main__":
     #povm_out_list, prob_out_list_junk, perm_out_list = locc_povm_func(gamma_ideal,
     #                                                         ips)
     operations = locc_operations(gamma_ideal, ips)
-    #print(len(operations))
+    print(len(operations))
     
     
-    #ini_uni = operations[3][1][0]
-    perm_list1 = operations[3][1]
+    ini_uni = operations[0][0].full()
     #print((ini_uni))
     #ini_uni = err_cenotn(0.1).full()
     
-    #uni = np.asarray(ini_uni)
-    #print(np.shape(uni)[0])
+    uni = np.asarray(ini_uni)
+    #print(uni)
+    ele_qobj = Qobj(uni)
+    #ele_qobj = ele_qobj.tidyup()
     
-    
-    
-    
-    
-    perm_list = extend_perm(perm_list1, ips)
-    
-    for i in range(len(perm_list)):
-        
-        ini_uni = perm_list[i]
-        
-        uni = np.asarray(ini_uni)
-        
-        print((uni))
-        ele_qobj = Qobj(uni)
-        ele_qobj = ele_qobj.tidyup()
-        
-        o_uni = error_unitary(ini_uni, 0, 0, 0)
-        print(o_uni)
-    
-    ##oput = Qobj(np.asarray(o_uni))#.tidyup()
-    #xxxx = (ele_qobj*oput.dag())
-    #print(xxxx.tidyup())
+    o_uni = error_unitary(ini_uni, 0, 0, 0)
+    print(o_uni)
+    oput = Qobj(np.asarray(o_uni))#.tidyup()
+    xxxx = (ele_qobj*oput.dag())
+    print(xxxx.tidyup())
         #print(ele_qobj)
-    
+    """
+    er = CRXGate()
+    #er.params = [0]
+    print(er.get_unitary([np.pi]))
+    """
     
     #y.append(len(operations))
     #for i, ele in enumerate((povm_out_list)):

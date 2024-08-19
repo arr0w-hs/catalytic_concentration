@@ -11,6 +11,7 @@ import math as math
 import pandas as pd
 import matplotlib.pyplot as plt
 from qutip import *
+from qutip.qip.operations import expand_operator
 from qutip.measurement import measure, measurement_statistics, measure_observable
 """
 ******************************************************

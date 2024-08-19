@@ -145,6 +145,7 @@ Functions for erroneous cnots and swap
 def err_cenotn(theta):
     cnot = tensor(ketbra0, I)+tensor(ketbra1, X)
     cnot_bar = tensor(ketbra0, X)+tensor(ketbra1, I)
+    #print(cnot_bar)
     err_cnot =  (np.cos(theta)*tensor(I,I) - 1j*np.sin(theta)*cnot_bar)*cnot
 
     return err_cnot
@@ -805,6 +806,7 @@ matrix for conversion to schmidt basis
 def closest_pure_state(density_mat):
 
     eigen_array = density_mat.eigenstates()
+    #print(eigen_array)
     eigen_states = np.asarray(eigen_array[1])
     eigen_values = np.asarray(eigen_array[0])
 
@@ -836,7 +838,7 @@ def basis2schmidt(psn_st):
     #psn_schmidt_basis = psn_schmidt_basis.full()
     #psn_schmidt_basis = Qobj(psn_schmidt_basis, dims = psn_dims)
 
-    return psn_schmidt_basis, basis_matrix, s    #Qobj(S), Qobj(U, dims = [[2,2], [2,2]]).dag(), Qobj(Vh, dims = [[2,2], [2,2]]).dag()
+    return psn_schmidt_basis, basis_matrix, s, u, v.trans()    #Qobj(S), Qobj(U, dims = [[2,2], [2,2]]).dag(), Qobj(Vh, dims = [[2,2], [2,2]]).dag()
 
 
 def basis2schmidt_with_catalyst(psn_st):
@@ -945,12 +947,23 @@ def prepare_dm_withreset(psn_dm, cnot_error, r_vect, l_vect, reset_count, sqe_ra
         psn_loss_final = prob_loss*psn_loss
         prob_loss = prob_loss*psn_loss.norm()
         psn_loss = reset_spins(psn_loss)
-        psn_dm = psn_loss.unit()
+        if psn_loss.norm() != 0:
+            #print(psn_loss)
+            psn_dm = psn_loss.unit()
+        else:
+            break
 
 
     prob_noloss = psn_noloss_final.norm()
     psn_noloss_final = psn_noloss_final.unit()
-    psn_loss = psn_loss.unit()
+
+    if psn_loss.norm() != 0:
+        #print(psn_loss)
+        psn_loss = psn_loss.unit()
+    else:
+        psn_loss = psn_loss
+
+    #
     total_prob = prob_noloss+prob_loss
 
     mea = np.flip(np.reshape(np.asarray(mea_list), 2*len(mea_list)))

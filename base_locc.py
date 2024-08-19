@@ -159,7 +159,7 @@ def create_adj_mat(ds_mat):
 def create_matching(adj):
     """create matching from the adj matrix"""
 
-    graph = nx.from_numpy_matrix(adj)
+    graph = nx.from_numpy_array(adj)
     matching = list(nx.min_weight_matching(graph))
 
     return matching

@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Apr  9 11:23:30 2024
+Created on Fri Jun 14 16:55:19 2024
 
 @author: hsharma4
 
 for creating simulation data for comparison between 
 (non-) catalytic locc and distillation in presence of
-depolarising noise
+depolarising noise to create a contour plot for them
+
 """
 import sys
 import os
@@ -69,47 +70,45 @@ fip_dist_list = []
 fip_dames_list = []
 fip_cat_reuse_list = []
 
-n = 50
+n = 20
 
 """preparing the bell states"""
 for j in range(1):
     print(j)
-    for i in range(1):
+    for i in range(n):
         
         
-        prob_in_state = 0.95#1-0.25*i/n #0.95
-        alpha = 0.85#1 - j/n*0.499
+        prob_in_state = 1-0.15*i/n #0.95
+        alpha = 1 - j/n*0.49
         
         #print(prob_in_state)
         #final_state = r_state(alpha, prob_in_state)
         #final_state = new_state_depol(alpha, prob_in_state)
-        #final_state = new_state_pauli_z(alpha, prob_in_state)
-        final_state = new_state_pauli_x(alpha, prob_in_state)
+        final_state = new_state_pauli_z(alpha, prob_in_state)
+        #final_state = new_state_pauli_x(alpha, prob_in_state)
         
         ideal_state = new_state_depol(1, 1)
         
-        #swc, afadf, aadsg = schmidt_decomp_of_dm(final_state)
-        #ops = [0.5, 0.5]
+        swc, afadf, aadsg = schmidt_decomp_of_dm(final_state)
+        ops = [0.5, 0.5]
         #print(swc, "swc")
         
         fid_cat, prob_cat, post_locc_state, carbon_cat_st = catalytic_conversion(final_state)
-        fid_nocat, prob_nocat, post_locc_state_nocat, _ = non_catalytic_conversion(final_state)
-        fid_dist, prob_dist, _ = distillation(final_state, ideal_state, 0)
+        fid_nocat, prob_nocat, post_locc_state_nocat = non_catalytic_conversion(final_state)
+        fid_dist, prob_dist = distillation(final_state, ideal_state, 0)
         fid_dames, prob_dames = dejmps(final_state, 0)
-        print(fid_dames, prob_dames, "dames", fid_dist, prob_dist, "dist")
-        print(fid_nocat, prob_nocat)
-        print(fid_cat, prob_cat)
-        #cat_post = post_locc_state.ptrace([2,5])
+        
+        cat_post = post_locc_state.ptrace([2,5])
         #print(post_locc_state.ptrace([1,4]))
         #print(post_locc_state.ptrace([2,5]))
         #print(post_locc_state.ptrace([3,6]), "post locc qobj")
-        #fid_reuse, prob_reuse, out_state_reuse, flag = catalytic_conversion_reuse(final_state, cat_post)
+        fid_reuse, prob_reuse, out_state_reuse, flag = catalytic_conversion_reuse(final_state, cat_post)
         #print(fid_cat, "fid cat")
         #print(fid_reuse, "fid reuse")
-        """
+    
         fid_cat_list.append(1-fid_cat)
-        fid_nocat_list.append(1-fid_nocat)
-        fid_dist_list.append(1-fid_dist)
+        fid_nocat_list.append(fid_nocat)
+        fid_dist_list.append(fid_dist)
         fid_dames_list.append(fid_dames)
         fid_cat_reuse_list.append(1-fid_reuse)
     
@@ -142,30 +141,35 @@ for j in range(1):
     
         prob_in_state_list.append(1-prob_in_state)
         alpha_list.append(1-alpha)
-        """
     #print(sdfaf)
-    
+
+y_min = np.min(prob_in_state_list)
+y_max = np.max(prob_in_state_list)
+
+x_min = np.min(alpha_list)
+x_max = np.max(alpha_list)
 #plt.figure()
 #plt.grid()
 #plt.scatter(alpha_list, fid_raw_list, s = 5, c = "blue")
-#fid_nocat_list = np.asarray(fid_nocat_list ).reshape((n,n))
-#print(len(fid_cat_list))
-#a = np.random.random((16, 16))
-#plt.imshow(fid_nocat_list, cmap='hot', interpolation='nearest')
+fid_nocat_list = np.reshape(np.asarray(fid_nocat_list ), (n,1))
+plt.imshow(fid_nocat_list, aspect = 'auto', interpolation='nearest', 
+           extent = (y_min, y_max, x_min, x_max), vmin=None, vmax=None)#, cmap='hot'
+plt.colorbar()
+#plt.title("Probability of ent. conc. k=2")
+#plt.ylabel(r'$\alpha$')
+#plt.xlabel("c")
 
-#h = plt.contourf(fid_nocat_list, prob_in_state_list, alpha_list)
-#plt.axis('scaled')
 #plt.colorbar()
+plt.show()
 
-#plt.colorbar()
-#plt.show()
-
-#fid_dist_list = np.asarray(fid_dist_list ).reshape((n,n))
-#print(len(fid_dist_list))
+fid_dist_list = np.reshape(np.asarray(fid_dist_list ), (n,1))
+print(np.shape(fid_dist_list))
 #a = np.random.random((16, 16))
-#plt.imshow(fid_dist_list, cmap='hot', interpolation='nearest')
-#plt.show()
-print(hehe)
+plt.imshow(fid_dist_list, aspect = 'auto', interpolation='nearest', 
+           extent = (y_min, y_max, x_min, x_max), vmin=None, vmax=None)#, cmap='hot'
+plt.colorbar()
+plt.show()
+
 data_dict = {
     "alpha_list": alpha_list,
     "prob_in_state_list": prob_in_state_list,

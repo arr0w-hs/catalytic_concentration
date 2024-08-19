@@ -95,7 +95,7 @@ def new_state_depol(a, prob):
     """putting ph in front of the four entangled spins"""
     bell_st = tensor(ket2dm(zero), bell_st)
     bell_st = bell_st.permute([0,1,3,2,4])
-    if bell_st.tr() < 0.9:
+    if np.real(bell_st.tr()) < 0.9:
         raise Exception ("trace less than one")
         
     return bell_st
@@ -113,13 +113,13 @@ def new_state_pauli_z(a, prob):
         #ket2dm(tensor(Z,I)*phi_plus)+
         #ket2dm(tensor(X*Z,I)*phi_plus)
         )
-    print(bell_st1)
+    #print(bell_st1)
     bell_st = tensor(bell_st1, bell_st1)
     
     """putting ph in front of the four entangled spins"""
     bell_st = tensor(ket2dm(zero), bell_st)
     bell_st = bell_st.permute([0,1,3,2,4])
-    if bell_st.tr() < 0.9:
+    if np.real(bell_st.tr()) < 0.9:
         raise Exception ("trace less than one")
         
     return bell_st
@@ -143,7 +143,7 @@ def new_state_pauli_x(a, prob):
     """putting ph in front of the four entangled spins"""
     bell_st = tensor(ket2dm(zero), bell_st)
     bell_st = bell_st.permute([0,1,3,2,4])
-    if bell_st.tr() < 0.9:
+    if np.real(bell_st.tr()) < 0.9:
         raise Exception ("trace less than one")
         
     return bell_st

@@ -23,6 +23,7 @@ from base_state_change import *
 from base_siv_state_prep import *
 from base_catalyst import *
 from updated_measurements import *
+from syn2depol import depol_channel
 
 
 Y = sigmay()
@@ -188,7 +189,7 @@ def distillation(prepared_state, perfect_state, cnot_err):
         for perm_num in range(6):
             psn_list1.append(permutation_distillation(psn_list[i], perm_num, 1))
             #perf_psn_list1.append(permutation_distillation(perf_psn_list[i], perm_num, 1))
-            op_list1.append([op_list[i],perm_num])
+            op_list1.append([op_list[i], perm_num])
             
     psn_list.clear()
     perf_psn_list.clear()
@@ -215,25 +216,59 @@ def distillation(prepared_state, perfect_state, cnot_err):
     one = basis(2,1)
     bell_st = 1/np.sqrt(2)*(tensor(zero,zero,zero,zero,zero) + 
                                      tensor(zero,one,zero,one,zero))
-    
+
     #for i in range(len(psn_list)):
     #    psn_list1.append(fidelity(psn_list[i], bell_st))
     
     #maxarg = np.argmax(psn_list1)
     
     #fid = psn_list1[maxarg]
-    #op = op_list[maxarg]
     #print(op[2])
     
     #maxarg1 = np.argmax(fip_list)
     #maxarg1 = np.argmax(prob_list)
     maxarg1 = np.argmax(fid_list)
     fidy = fid_list[maxarg1]
+    op = op_list[maxarg1]
     #print(op_list[maxarg1])
     #print(op)
     #print(fidy)
-    return fidy, prob_list[maxarg1]#, op
-    
+    return fidy, prob_list[maxarg1], op
+
+def distillation_operation(prepared_state, operation_list, sqe_err, cnot_err):
+    sqe_list = operation_list[0]
+    meas = operation_list[1]
+    cnot_control = operation_list[2]
+
+    num_qubits = int(np.log2(prepared_state.shape[0]))
+    #print(num_qubits)
+
+
+    psn = permutation_distillation(prepared_state, sqe_list[0], 0)
+    if sqe_list[0] != 0:
+        psn = depol_channel(psn, sqe_err, 2, num_qubits)
+        psn = depol_channel(psn, sqe_err, 4, num_qubits)
+
+    psn = permutation_distillation(psn, sqe_list[1], 1)
+    if sqe_list[0] != 0:
+        psn = depol_channel(psn, sqe_err, 1, num_qubits)
+        psn = depol_channel(psn, sqe_err, 3, num_qubits)
+
+    #psn = depol_channel(psn, sqe_err, 1, num_qubits)
+
+    psn_post_cnot = cnot_distillation(psn, 0, cnot_control)
+    psn_post_cnot = depol_channel(psn_post_cnot, cnot_err, 1, num_qubits)
+    psn_post_cnot = depol_channel(psn_post_cnot, cnot_err, 2, num_qubits)
+    psn_post_cnot = depol_channel(psn_post_cnot, cnot_err, 3, num_qubits)
+    psn_post_cnot = depol_channel(psn_post_cnot, cnot_err, 4, num_qubits)
+    if meas != 0:
+        psn_post_cnot = depol_channel(psn_post_cnot, sqe_err, 2, num_qubits)
+        psn_post_cnot = depol_channel(psn_post_cnot, sqe_err, 4, num_qubits)
+
+    psn1, fid_disti, prob_disti = coinc_distillation_final(psn_post_cnot, meas, cnot_control, 0)
+
+    return fid_disti, prob_disti
+
 def dejmps(prepared_state, cnot_err):
     #print(H*S)
     #print((H*S*H)*S*H*S)
