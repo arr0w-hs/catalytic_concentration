@@ -255,6 +255,9 @@ def locc_povm_func(final_state, ini_state):
 
         np.fill_diagonal(povm, beta)
         povm_list.append(povm)
+        #print(np.linalg.matrix_rank(povm))
+        #print(np.nonzero(povm))
+    #print("ed")
 
     return povm_list, prob_list, perm_list
 

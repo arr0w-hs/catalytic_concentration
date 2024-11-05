@@ -205,7 +205,7 @@ def catalytic_conversion(prepared_dm):
     """use function for locc povms to find the ideal povms to get to gamma"""
     povm_out_list, prob_out_list_junk, perm_out_list = locc_povm_func(gamma_ideal,
                                                                  input_state_array)
-    
+    #print(len(povm_out_list))
     """apply those povm on the density matrix"""
     gamma_density_mat, prob_obtained_list = locc_povm_on_dm_qobj(psnc_dm,
                                                                  povm_out_list, perm_out_list)

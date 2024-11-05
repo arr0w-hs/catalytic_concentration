@@ -28,6 +28,11 @@ from syn2depol import extend_perm
 import numpy as np
 import pandas as pd
 import time
+#import rsmf
+#print(dir_name+"/quantum-template.tex")
+# Get formatter specifications from tex file
+#fmt = rsmf.setup(dir_name+"/quantum-template.tex")
+
 plt.rcParams.update({'font.size': 12})
 
 def oper_err(list_circs, prepared_state, cat_flag, sqe_error, cnot_error):
@@ -64,23 +69,23 @@ def oper_err(list_circs, prepared_state, cat_flag, sqe_error, cnot_error):
     return fid, prob, output_state
 
 
-"""importing the generated bounded deg graphs"""
 
-data_location = '/144038.pkl'   #2024-08-01_cat_disti_comparison_nc
-#data_location = '/123412.pkl'
-with open(dir_name+'/test_circuits/2024-10-18_cat_disti_comparison_nc'+data_location, 'rb') as f:
+#data_location = '/145345.pkl'   #2024-08-01_cat_disti_comparison_nc
+data_location = '/15321.pkl'
+with open(dir_name+'/test_circuits/2024-09-02_cat_disti_comparison_nc'+data_location, 'rb') as f:
     data_dict_loaded = pickle.load(f)
     f.close()
 
 #print(data_dict_loaded.keys())
 list_circ_nc = data_dict_loaded["list_circs"]
+#print(data_dict_loaded["a"], data_dict_loaded["p"])
 
 
 
-data_dir = os.path.join(dir_name, "cirl")
+data_dir = os.path.join(dir_name, "cirl1")#cirl is for 0.95, cirl_1 is for 0.85
 
 
-data_dir = os.path.join(dir_name, "cirl")
+#data_dir = os.path.join(dir_name, "cirl_1")
 #plot_dir = os.path.join(dir_name, "er_results_data/plots")
 #df_list = []
 
@@ -101,50 +106,50 @@ for root, _, files in os.walk(data_dir):
 df_list = []
 
 
-pcl = '/131930.pkl'
+pcl = '/174637.pkl'
 with open(data_dir+pcl, 'rb') as f:
     data_dict_loaded = pickle.load(f)
     f.close()
 cir0 = data_dict_loaded["list_circs"][0]
 
-pcl = '/12347.pkl'          #2 elements
+pcl = '/135815.pkl'          #2 elements
 with open(data_dir+pcl, 'rb') as f:
     data_dict_loaded = pickle.load(f)
     f.close()
 cir1 = data_dict_loaded["list_circs"]
 
 
-pcl = '/131153.pkl'         #2 elements
+pcl = '/18929.pkl'
 with open(data_dir+pcl, 'rb') as f:
     data_dict_loaded = pickle.load(f)
     f.close()
-cir2 = data_dict_loaded["list_circs"]
+cir2 = data_dict_loaded["list_circs"][0]
 
-pcl = '/22940.pkl'
+pcl = '/1439.pkl'           #2 elements
 with open(data_dir+pcl, 'rb') as f:
     data_dict_loaded = pickle.load(f)
     f.close()
-cir3 = data_dict_loaded["list_circs"][0]
+cir3 = data_dict_loaded["list_circs"]
 
-pcl = '/114520.pkl'        #2 elements
+pcl = '/14614.pkl'        #2 elements
 with open(data_dir+pcl, 'rb') as f:
     data_dict_loaded = pickle.load(f)
     f.close()
 cir4 = data_dict_loaded["list_circs"]
 
-pcl = '/131451.pkl'
+pcl = '/162659.pkl'
 with open(data_dir+pcl, 'rb') as f:
     data_dict_loaded = pickle.load(f)
     f.close()
 cir5 = data_dict_loaded["list_circs"][0]
 
-pcl = '/14555.pkl'
+pcl = '/14949.pkl'
 with open(data_dir+pcl, 'rb') as f:
     data_dict_loaded = pickle.load(f)
     f.close()
 perm = data_dict_loaded["list_circs"]
 
-pcl = '/221349.pkl'
+pcl = '/18320.pkl'
 with open(data_dir+pcl, 'rb') as f:
     data_dict_loaded = pickle.load(f)
     f.close()                               #u and v are the first two elements
@@ -162,11 +167,11 @@ for ele in cir1:
         cir_temp.append(elem)
 cir1 = cir_temp
 
-cir_temp = Circuit(cir2[0].num_qudits)
-for ele in cir2:
+cir_temp = Circuit(cir3[0].num_qudits)
+for ele in cir3:
     for elem in ele:
         cir_temp.append(elem)
-cir2 = cir_temp
+cir3 = cir_temp
 
 cir_temp = Circuit(cir4[0].num_qudits)
 for ele in cir4:
@@ -193,16 +198,16 @@ cir4 = cir_temp
 #print(aa)
 
 perm1 = perm[0][0][1]
-perm2 = perm[0][1][1]
+perm3 = perm[0][1][1]
 perm4 = perm[0][2][1]
 
 cir1list = []
 cir1list.append(cir1)
 cir1list.append(perm1)
 
-cir2list = []
-cir2list.append(cir2)
-cir2list.append(perm2)
+cir3list = []
+cir3list.append(cir3)
+cir3list.append(perm3)
 
 cir4list = []
 cir4list.append(cir4)
@@ -210,7 +215,7 @@ cir4list.append(perm4)
 #cir2.append(perm2)
 #cir4.append(perm4)
 
-locc_cir = [cir0[0], cir1list, cir2list, cir3[0], cir4list, cir5[0]]
+locc_cir = [cir0[0], cir1list, cir2[0], cir3list, cir4list, cir5[0]]
 cat = [locc_cir, cir_slocc[1], cir_slocc[2], cir_slocc[2]]
 #print(u_op.gate_counts)
 
@@ -233,7 +238,7 @@ cat = [locc_cir, cir_slocc[1], cir_slocc[2], cir_slocc[2]]
 #         #for el in elem:
 #         #    print(type(el), "el")
 
-a = 0.95
+a = 0.85
 p = 0.95
 final_state = new_state_pauli_x(a, p)
 ideal_state = new_state_pauli_x(1, 1)
@@ -261,7 +266,7 @@ prob_dist_list = []
 
 
 #print(output_state_qobj)
-for i in range(0):
+for i in range(20):
     print(i)
     t1 = time.time()
     err = (i)*0.001
@@ -278,35 +283,38 @@ for i in range(0):
     fid_list.append(fid_nocat)
     prob_list.append(prob_nocat)
 
-    #fid_cat, prob_cat, post_locc_state_cat = oper_err(cat, final_state, 1, err, cerr)
-    #fid_cat_list.append(fid_cat)
-    #prob_cat_list.append(prob_cat)
+    fid_cat, prob_cat, post_locc_state_cat = oper_err(cat, final_state, 1, err, cerr)
+    fid_cat_list.append(fid_cat)
+    prob_cat_list.append(prob_cat)
 
     #print(i, time.time()-t1)
 
 
+#fig = fmt.figure()
 plt.figure()
-plt.grid()
-#plt.plot(x, fid_cat_list, label = "catalytic SLOCC")
-plt.plot(x, fid_list, label = "SLOCC")
+plt.plot(x, fid_cat_list, label = "CEC")
+plt.plot(x, fid_list, label = "SEC")
 plt.plot(x, fid_dist_list, label = "Distillation")
 #plt.yscale("log")
 plt.legend()
 plt.ylabel('Fidelity')
 plt.xlabel('Error rate')
 plt.xticks(rotation=45)
-#plt.savefig(dir_name+"/_fidelity_cat_sqe.png", dpi=1000, format="png", bbox_inches = 'tight')
-plt.show()
+plt.grid()
+plt.savefig(dir_name+"/_fidelity_cat_sqe1.png", dpi=1000, format="png", bbox_inches = 'tight')
+plt.savefig(dir_name+"/_fidelity_cat_sqe1.svg", dpi=1000, format="svg", bbox_inches = 'tight')
+#plt.show()
 
 plt.figure()
 plt.grid()
-#plt.plot(x, prob_cat_list, label = "catalytic SLOCC")
-plt.plot(x, prob_list, label = "SLOCC")
+plt.plot(x, prob_cat_list, label = "CEC")
+plt.plot(x, prob_list, label = "SEC")
 plt.plot(x, prob_dist_list, label = "Distillation")
 #plt.yscale("log")
 plt.legend()
 plt.ylabel('Probability of success')
 plt.xlabel('Error rate')
 plt.xticks(rotation=45)
-#plt.savefig(dir_name+"/_probability_cat_sqe" + ".png", dpi=1000, format="png", bbox_inches = 'tight')
-plt.show()
+plt.savefig(dir_name+"/_probability_cat_sqe1" + ".png", dpi=1000, format="png", bbox_inches = 'tight')
+plt.savefig(dir_name+"/_probability_cat_sqe1" + ".svg", dpi=1000, format="svg", bbox_inches = 'tight')
+#plt.show()

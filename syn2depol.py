@@ -28,7 +28,7 @@ from qutip.qip.operations import cnot
 from base_locc_alt import locc_operations, slocc_unitary
 from bqskit import compile
 from base_siv_state_prep import prepare_dm_withreset, l_vector, r_vector
-from base_depol_channels import new_state_depol, new_state_pauli_z, new_state_pauli_x
+from base_depol_channels import new_state_depol, new_state_pauli_z, new_state_pauli_x1
 
 from bqskit.compiler import Compiler, MachineModel
 from bqskit.ir.circuit import Circuit
@@ -147,26 +147,26 @@ def unitary2circ(list_unitaries, cat_flag):
     slocc_circ = compile_unitary(Qobj(slocc_uni))
     
     for i, ele in enumerate(operations):
-        if i == 4 or i ==2 or i==1:
+        #if i == 4 or i ==3 or i==1:
 
-            one_round_circ = []
-            povm_unitary = ele[0]
-            #print(povm_unitary*povm_unitary.dag())
-            perm_list = extend_perm(ele[1], 2+cat_flag)
-    
-            time1 = time.time()
-            povm_circ = compile_unitary(povm_unitary)
-    
-            for j, elem in enumerate(perm_list):
-                perm_list[j] = compile_unitary(Qobj(elem))
-            
-            one_round_circ.append(povm_circ)
-            one_round_circ.append(perm_list)
-            
-            operations_out.append(one_round_circ)
+        one_round_circ = []
+        povm_unitary = ele[0]
+        #print(povm_unitary*povm_unitary.dag())
+        perm_list = extend_perm(ele[1], 2+cat_flag)
 
-        else:
-            continue
+        time1 = time.time()
+        povm_circ = compile_unitary(povm_unitary)
+
+        for j, elem in enumerate(perm_list):
+            perm_list[j] = compile_unitary(Qobj(elem))
+        
+        one_round_circ.append(povm_circ)
+        one_round_circ.append(perm_list)
+        
+        operations_out.append(one_round_circ)
+
+        #else:
+        #    continue
 
     return operations_out, slocc_circ, u_circ, v_circ
 
@@ -621,9 +621,9 @@ if __name__ == "__main__":
     #final_state, final_state_loss, prob_final_state, prob_final_loss, mea_value = prepare_dm_withreset(
     #        psn_dm, cnot_errore, rr, lvec, num_reset, sqe_error, dist)
     
-    a = 0.85
+    a = 0.9
     p = 0.95
-    final_state = new_state_pauli_x(a, p)
+    final_state = new_state_pauli_x1(a, p)
     
     
     
@@ -632,12 +632,12 @@ if __name__ == "__main__":
     
     #_, psnc_dm, _, _, _, _ = pre_conversion_process(final_state)
     
-    #list_unit = to_be_syn_nc(final_state)
-    list_unit = to_be_syn_cat(final_state)
+    list_unit = to_be_syn_nc(final_state)
+    #list_unit = to_be_syn_cat(final_state)
     #print(list_unit[1], list_unit[2], list_unit[3])
     list_circs = unitary2circ(list_unit, 0)
 
-    #povm_uni = list_unit[0][2][0]
+    #povm_uni = list_unit[0][4][0]
     #print(povm_uni)
 
     #t1 = time.time()
@@ -647,6 +647,7 @@ if __name__ == "__main__":
     #list_circs = split_circuit(povm_uni)
 
    # uni = list_unit[0][0][0]
+
     """
     print(uni.shape)
     t1 = time.time()
@@ -673,7 +674,7 @@ if __name__ == "__main__":
         compiled_circuit = compiler.compile(circuit, workflow)
         print(compiled_circuit.gate_counts)
     print(time.time()-t1)
-    """
+
     #print(adf)
     #cir = compile_unitary(uni)
     #print(cir.gate_counts)
@@ -690,7 +691,7 @@ if __name__ == "__main__":
     #output_state = apply_locc_conversion(list_circs[0], ps_aiu, 1, 0, 0)
     #print(hj)
     
-    
+    """
     #print(list_circs)
     ts = pd.Timestamp.today(tz = 'Europe/Stockholm')
     date_str = str(ts.date())

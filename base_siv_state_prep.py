@@ -800,7 +800,7 @@ the state in schmidt basis |ph>|sp_a>|n_a>|sp_b>|n_b>|c_a>|c_b>
 photon is in |0> basis
 matrix for conversion to schmidt basis
 ******************************************************
-******************************************************
+******************************************************f
 """
 
 def closest_pure_state(density_mat):

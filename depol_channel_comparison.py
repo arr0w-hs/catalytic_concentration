@@ -23,9 +23,17 @@ from pathlib import Path
 from base_siv_catalytic_transform import *
 from base_siv_state_prep import prepare_dm_withreset, l_vector, r_vector
 from base_distillation import distillation, dejmps
-from base_depol_channels import *
+from base_depol_channels import *# new_state_pauli_x, new_state_pauli_z, new_state_depol, werner_state
 import numpy as np
 import pandas as pd
+
+zero = basis(2,0)
+one = basis(2,1)
+I = qeye(2)
+X = sigmax()
+Z = sigmaz()
+Y = sigmay()
+H = 1/np.sqrt(2)*(X+Z)
 
 
 plt.rcParams.update({'font.size': 12})
@@ -69,81 +77,79 @@ fip_dist_list = []
 fip_dames_list = []
 fip_cat_reuse_list = []
 
-n = 50
+n = 10
 
 """preparing the bell states"""
-for j in range(1):
-    print(j)
-    for i in range(1):
-        
-        
-        prob_in_state = 0.95#1-0.25*i/n #0.95
-        alpha = 0.85#1 - j/n*0.499
-        
-        #print(prob_in_state)
-        #final_state = r_state(alpha, prob_in_state)
-        #final_state = new_state_depol(alpha, prob_in_state)
-        #final_state = new_state_pauli_z(alpha, prob_in_state)
-        final_state = new_state_pauli_x(alpha, prob_in_state)
-        
-        ideal_state = new_state_depol(1, 1)
-        
-        #swc, afadf, aadsg = schmidt_decomp_of_dm(final_state)
-        #ops = [0.5, 0.5]
-        #print(swc, "swc")
-        
-        fid_cat, prob_cat, post_locc_state, carbon_cat_st = catalytic_conversion(final_state)
-        fid_nocat, prob_nocat, post_locc_state_nocat, _ = non_catalytic_conversion(final_state)
-        fid_dist, prob_dist, _ = distillation(final_state, ideal_state, 0)
-        fid_dames, prob_dames = dejmps(final_state, 0)
-        print(fid_dames, prob_dames, "dames", fid_dist, prob_dist, "dist")
-        print(fid_nocat, prob_nocat)
-        print(fid_cat, prob_cat)
-        #cat_post = post_locc_state.ptrace([2,5])
-        #print(post_locc_state.ptrace([1,4]))
-        #print(post_locc_state.ptrace([2,5]))
-        #print(post_locc_state.ptrace([3,6]), "post locc qobj")
-        #fid_reuse, prob_reuse, out_state_reuse, flag = catalytic_conversion_reuse(final_state, cat_post)
-        #print(fid_cat, "fid cat")
-        #print(fid_reuse, "fid reuse")
-        """
-        fid_cat_list.append(1-fid_cat)
-        fid_nocat_list.append(1-fid_nocat)
-        fid_dist_list.append(1-fid_dist)
-        fid_dames_list.append(fid_dames)
-        fid_cat_reuse_list.append(1-fid_reuse)
+
+for i in range(n):
+    print(i)
     
-        prob_cat_list.append(prob_cat)
-        prob_nocat_list.append(prob_nocat)
-        prob_dist_list.append(prob_dist)
-        prob_dames_list.append(prob_dames)
-        prob_cat_reuse_list.append(prob_reuse)
-        
-        fip_cat_list.append(fid_cat*prob_cat)
-        fip_nocat_list.append((fid_nocat*prob_nocat))
-        fip_dist_list.append(fid_dist*prob_dist)
-        fip_dames_list.append(fid_dames*prob_dames)
-        fip_cat_reuse_list.append(fid_reuse*prob_reuse)
-        
-        cat_state.append((carbon_cat_st[0]))
-        cat_fid_post = fidelity(carbon_cat_st, cat_post)
-        cat_fidelity.append(cat_fid_post)
+    prob_in_state = 1#1-0.25*i/n #0.95
+    alpha = 1 - i/n*0.25
+
+    #print(prob_in_state)
+    #final_state = r_state(alpha, prob_in_state)
+    #final_state = new_state_depol(alpha, prob_in_state)
+    final_state = new_state_pauli_x1(alpha, prob_in_state)
+    #final_state = new_state_pauli_x(alpha, prob_in_state)
     
+    ideal_state = new_state_pauli_x1(1, 1)
+    #print(ideal_state)
+    #swc, afadf, aadsg = schmidt_decomp_of_dm(final_state)
+    #ops = [0.5, 0.5]
+    #print(swc, "swc")
     
-        bell_st = 1/np.sqrt(2)*(tensor(basis(2,0), basis(2,0)) + tensor(basis(2,1), basis(2,1)))
-        raw_fid = np.sqrt(fidelity(ideal_state, final_state))
-        fid_raw_one.append(fidelity(bell_st, final_state.ptrace([1,3])))
-        fid_raw_two.append(fidelity(bell_st, final_state.ptrace([2,4])))
-        fid_raw_list.append(1-(raw_fid))
-        
-        #print(raw_fid)
-        #print((np.sqrt(alpha)+np.sqrt(1-alpha))**2/2)
-        #print(fid_raw_one, fid_raw_two)
+    fid_cat, prob_cat, post_locc_state, carbon_cat_st = catalytic_conversion(final_state)
+    fid_nocat, prob_nocat, post_locc_state_nocat, _ = non_catalytic_conversion(final_state)
+    fid_dist, prob_dist, _ = distillation(final_state, ideal_state, 0)
+    #fid_dames, prob_dames = dejmps(final_state, 0)
+    #print( fid_dist, prob_dist, "dist")#fid_dames, prob_dames, "dames",
+    #print(fid_nocat, prob_nocat)
+    #print(fid_cat, prob_cat)
+    cat_post = post_locc_state.ptrace([2,5])
+    #print(post_locc_state.ptrace([1,4]))
+    #print(post_locc_state.ptrace([2,5]))
+    #print(post_locc_state.ptrace([3,6]), "post locc qobj")
+    fid_reuse, prob_reuse, out_state_reuse, flag = catalytic_conversion_reuse(final_state, cat_post)
+    #print(fid_cat, "fid cat")
+    #print(fid_reuse, "fid reuse")
+
+    fid_cat_list.append(1-fid_cat)
+    fid_nocat_list.append(1-fid_nocat)
+    fid_dist_list.append(1-fid_dist)
+    #fid_dames_list.append(fid_dames)
+    fid_cat_reuse_list.append(1-fid_reuse)
+
+    prob_cat_list.append(prob_cat)
+    prob_nocat_list.append(prob_nocat)
+    prob_dist_list.append(prob_dist)
+    #prob_dames_list.append(prob_dames)
+    prob_cat_reuse_list.append(prob_reuse)
     
-        prob_in_state_list.append(1-prob_in_state)
-        alpha_list.append(1-alpha)
-        """
-    #print(sdfaf)
+    fip_cat_list.append(fid_cat*prob_cat)
+    fip_nocat_list.append((fid_nocat*prob_nocat))
+    fip_dist_list.append(fid_dist*prob_dist)
+    #fip_dames_list.append(fid_dames*prob_dames)
+    fip_cat_reuse_list.append(fid_reuse*prob_reuse)
+    
+    cat_state.append((carbon_cat_st[0]))
+    cat_fid_post = fidelity(carbon_cat_st, cat_post)
+    cat_fidelity.append(cat_fid_post)
+
+
+    bell_st = 1/np.sqrt(2)*(tensor(basis(2,0), basis(2,0)) + tensor(basis(2,1), basis(2,1)))
+    raw_fid = np.sqrt(fidelity(ideal_state, final_state))
+    fid_raw_one.append(fidelity(bell_st, final_state.ptrace([1,3])))
+    fid_raw_two.append(fidelity(bell_st, final_state.ptrace([2,4])))
+    fid_raw_list.append(1-(raw_fid))
+    
+    #print(raw_fid)
+    #print((np.sqrt(alpha)+np.sqrt(1-alpha))**2/2)
+    #print(fid_raw_one, fid_raw_two)
+
+    prob_in_state_list.append(1-prob_in_state)
+    alpha_list.append(1-alpha)
+
     
 #plt.figure()
 #plt.grid()
@@ -165,7 +171,7 @@ for j in range(1):
 #a = np.random.random((16, 16))
 #plt.imshow(fid_dist_list, cmap='hot', interpolation='nearest')
 #plt.show()
-print(hehe)
+
 data_dict = {
     "alpha_list": alpha_list,
     "prob_in_state_list": prob_in_state_list,
@@ -222,3 +228,5 @@ metadata_dict = {
 with open(data_directory + time_str +'_metadata.txt', mode="w") as f:
     f.write(str(metadata_dict))
     f.close()
+
+

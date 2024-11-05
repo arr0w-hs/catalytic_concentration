@@ -9,7 +9,6 @@ Created on Wed Mar 20 09:48:32 2024
 import sys
 import os
 import pickle
-import numpy as np
 import matplotlib.pyplot as plt
 
 plt.rcParams.update({'font.size': 12})
@@ -17,16 +16,20 @@ sys.path.append(os.path.dirname(__file__))
 dir_name = os.path.dirname(__file__)
 
 #data_location = '/2024-06-14_cat_disti_comparison/94732'
-data_location = '/2024-04-29_depol_channel_comparison/121258'
+data_location = '/2024-11-05_depol_channel_comparison/232545'#122431, 121820 #141740
 with open(dir_name+'/data'+data_location+'.pkl', 'rb') as f:
     data_dict_loaded = pickle.load(f)
     f.close()
 
-print(data_dict_loaded.keys())
+#print(data_dict_loaded.keys())
 
 fid_raw_list = data_dict_loaded["fid_raw_list"]
-#prob_in_state_list = data_dict_loaded["alpha_list"]
-prob_in_state_list = data_dict_loaded["prob_in_state_list"]
+prob_in_state_list = data_dict_loaded["alpha_list"]
+#prob_in_state_list = data_dict_loaded["prob_in_state_list"]
+
+xmin = 1
+xmax = 70
+prob_in_state_list = prob_in_state_list[xmin:xmax]
 #prob_in_state_list = data_dict_loaded["fid_raw_list"]
 
 
@@ -35,90 +38,57 @@ prob_in_state_list = data_dict_loaded["prob_in_state_list"]
     #print(ele)
 
 #print(prob_in_state_list)
-x1 = np.linspace(np.min(fid_raw_list), 0.95, 100)
+#x1 = np.linspace(np.min(fid_raw_list), 0.95, 100)
 
 
 
 plt.figure()
 plt.grid()
-plt.scatter(prob_in_state_list, data_dict_loaded["prob_cat_list"], s = 5, c = "red")#, "ob", alpha = 0.3)
-plt.scatter(prob_in_state_list, data_dict_loaded["prob_nocat_list"], s = 5, c = "blue")
-plt.scatter(prob_in_state_list, data_dict_loaded["prob_dist_list"], s = 5, c = "limegreen")
-plt.scatter(prob_in_state_list, data_dict_loaded["prob_cat_reuse_list"], s = 5, c = "orange")
+plt.plot(prob_in_state_list, data_dict_loaded["prob_cat_list"][xmin:xmax])#, s = 5)#, c = "red")#, "ob", alpha = 0.3)
+plt.plot(prob_in_state_list, data_dict_loaded["prob_nocat_list"][xmin:xmax])#, s = 5)#, c = "blue")
+plt.plot(prob_in_state_list, data_dict_loaded["prob_dist_list"][xmin:xmax])#, s = 5)#, c = "limegreen")
+plt.plot(prob_in_state_list, data_dict_loaded["prob_cat_reuse_list"][xmin:xmax])#, s = 5)#, c = "orange")
 #plt.gca().invert_xaxis()
 #plt.scatter(fid_raw_list, dames_prob_list, s = 4, c = "orange")
 #plt.title('Probability')
 #plt.yscale("log")
 #plt.xscale("log")
 plt.ylabel('Probability of success')
-plt.xlabel('Raw state infidelity')
-#plt.xlabel('Error in state ("coherent error")')
-#plt.xlabel('Error probability ("mixed-ness")')
+#plt.xlabel('Raw state infidelity')
+#plt.xlabel('Coherent error')
+plt.xlabel('Probability of depolarisation')
 plt.xticks(rotation=45)
-plt.legend(["Catalytic", "Non-catalytic", "Distillation", "Catalyst reuse"])
-#plt.savefig(dir_name +'/plots' + data_location + "_probability" + ".svg", dpi=1000, format="svg", bbox_inches = 'tight')
-"""
-z = np.polyfit(raw_fid_list, cat_prob, 2)
-p = np.poly1d(z)
-plt.plot(x1,p(x1),"--", c = "red", linewidth = 0.7)
-
-z = np.polyfit(raw_fid_list, nocat_prob, 2)
-p = np.poly1d(z)
-plt.plot(x1,p(x1),"--", c = "blue", linewidth = 0.7)
-
-z = np.polyfit(raw_fid_list, dist_prob_list, 2)
-p = np.poly1d(z)
-plt.plot(x1,p(x1),"--", c = "limegreen", linewidth = 0.7)
-
-z = np.polyfit(raw_fid_list, dames_prob_list, 2)
-p = np.poly1d(z)
-plt.plot(x1,p(x1),"--", c = "orange", linewidth = 0.7)
+plt.legend(["CEC", "NEC", "Distillation", "Catalyst reuse"])
+#plt.savefig(dir_name +'/plots' + data_location + "_probability" + ".png", dpi=1000, format="png", bbox_inches = 'tight')
+#plt.savefig(dir_name +'/plots' + data_location + "_probability" + ".pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
 
 
-#plt.plot(x1, x1, linewidth = 0.5)
-z = np.polyfit(raw_fid_list, fid_cat, 2)
-p = np.poly1d(z)
-plt.plot(x1,p(x1),"--", c = "red", linewidth = 0.7)
+fid_nocat_list = data_dict_loaded["fid_nocat_list"][xmin:xmax]
+fid_cat_list = data_dict_loaded["fid_cat_list"][xmin:xmax]
+fid_dist_list = data_dict_loaded["fid_dist_list"][xmin:xmax]
+fid_cat_reuse_list = data_dict_loaded["fid_cat_reuse_list"][xmin:xmax]
 
-z = np.polyfit(raw_fid_list, fid_no_cat, 2)
-p = np.poly1d(z)
-plt.plot(x1,p(x1),"--", c = "blue", linewidth = 0.7)
-
-z = np.polyfit(raw_fid_list, fid_dist_list, 2)
-p = np.poly1d(z)
-plt.plot(x1,p(x1),"--", c = "limegreen", linewidth = 0.7)
-
-z = np.polyfit(raw_fid_list, fid_dames_list, 2)
-p = np.poly1d(z)
-plt.plot(x1,p(x1),"--", c = "orange", linewidth = 0.7)
-
-x1 = np.linspace(np.min(raw_fid_list), np.max(raw_fid_list), 100)
-"""
-fid_nocat_list = data_dict_loaded["fid_nocat_list"]
-for i, ele in enumerate(fid_nocat_list):
-    if ele < 1e-5:
-        fid_nocat_list[i] = 1e-4
-        print(i)
 
 plt.figure()
 plt.grid()
-plt.scatter(prob_in_state_list, data_dict_loaded["fid_cat_list"], s = 5, c = "red")
-plt.scatter(prob_in_state_list, data_dict_loaded["fid_nocat_list"], s = 5, c = "blue")
-plt.scatter(prob_in_state_list, data_dict_loaded["fid_dist_list"], s = 5, c = "limegreen")
-plt.scatter(prob_in_state_list, data_dict_loaded["fid_cat_reuse_list"], s = 5, c = "orange")
+plt.plot(prob_in_state_list, fid_cat_list)#, s = 5)#, c = "red")
+plt.plot(prob_in_state_list, fid_nocat_list)#, s = 5)#, c = "blue")
+plt.plot(prob_in_state_list, fid_dist_list)#, s = 5)#, c = "limegreen")
+plt.plot(prob_in_state_list, fid_cat_reuse_list)#, s = 5)#, c = "orange")
 #plt.gca().invert_xaxis()
 #plt.scatter(fid_raw_list, fid_dames_list, s = 4, c = "orange")
 
 #plt.scatter(kap, fip_nocat, s = 0.95)
 #plt.title('Fidelity')
-plt.yscale("log")
+#plt.yscale("log")
 plt.ylabel('Infidelity of final state')
-plt.xlabel('Raw state infidelity')
-#plt.xlabel('Error in state ("coherent error")')
-#plt.xlabel('Error probability ("mixed-ness")')
+#plt.xlabel('Raw state infidelity')
+#plt.xlabel('Coherent error')
+plt.xlabel('Probability of depolarisation')
 plt.xticks(rotation=45)
-plt.legend(["Catalytic", "Non-catalytic", "Distillation", "Catalyst reuse"])
+plt.legend(["CEC", "NEC", "Distillation", "Catalyst reuse"])
 #plt.savefig(dir_name +'/plots' + data_location + "_fidelity" + ".png", dpi=1000, format="png", bbox_inches = 'tight')
+#plt.savefig(dir_name +'/plots' + data_location + "_fidelity" + ".pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
 """
 plt.figure()
 plt.grid()
@@ -131,3 +101,4 @@ plt.xticks(rotation=45)
 #plt.legend(["Catalytic", "Non-catalytic", "Distillation", "DEJMPS"])
 #plt.savefig(dir_name+"/fidelity_vs_dist"+".png", dpi=1000, format="png")
 """
+print()

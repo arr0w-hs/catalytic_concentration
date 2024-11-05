@@ -145,12 +145,13 @@ def one_round_povm_func(op_state, ip_state):#, num_qubits):
         ops_dm += prob_obtained_list[i]*vec2dm(ele)
     #ops_dm_list.append(ops_dm)
 
+
     return povm_out_list, perm_out_list, output_locc_povm_func[1], ops_dm
 
 def unitary_on_auxiliary(povm_set):
     """
     takes the set of dxd dimensional povm with only two elements
-    and makes a unitary to be applied on the data + auxiliary qubit
+    and makes a list of unitary to be applied
 
     returns: a list of the unitaries equal to the dimensions of the povms
     """
@@ -205,7 +206,7 @@ def one_round_unitary(num_qubits, unitary_list):
             unitary_temp = tensor(qubit_dm, unitary_list[i])
         else:
             unitary_temp = tensor(qubit_dm, qeye(2))
-        
+            #continue
         """unitary final is the unitary on data + aux qubits"""
         unitary_final += unitary_temp
 
