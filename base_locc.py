@@ -9,27 +9,27 @@ import sys
 import os
 
 import numpy as np
-from qutip import *
+#from qutip import *
 #from qutip.measurement import measure, measurement_statistics, measure_observable
 import networkx as nx
-
+from base_slocc import concat_zeros
 sys.path.append(os.path.dirname(__file__))
-from base_slocc import *
 
 
-def check_majorisation(final_state, initial_state):
-    """func for checking majorisation of input and output states"""
 
-    sumf = 0
-    sumi = 0
-    res = 1
-    for i in range(len(final_state)):
-        sumf += final_state[i]
-        sumi += initial_state[i]
-        if sumf < sumi:
-            res = 0
+# def check_majorisation(final_state, initial_state):
+#     """func for checking majorisation of input and output states"""
 
-    return res
+#     sumf = 0
+#     sumi = 0
+#     res = 1
+#     for i in range(len(final_state)):
+#         sumf += final_state[i]
+#         sumi += initial_state[i]
+#         if sumf < sumi:
+#             res = 0
+
+#     return res
 
 def k_t_transform(final_state, input_state):
     """func for finding value of k and t for constructing D matrix"""
@@ -70,8 +70,8 @@ def create_ds_matrix(final_state, input_state):
     """
 
     count = 0
-    if len(final_state) > len(input_state):
-        raise Exception("Incoherent dimensions of states")
+    assert len(final_state) <= len(input_state)
+        #raise Exception("Incoherent dimensions of states")
 
     ips_temp = input_state
     ops_temp = final_state
@@ -85,13 +85,13 @@ def create_ds_matrix(final_state, input_state):
         ops_temp = np.matmul(d_matrix_temp, ops_temp)
         identity_temp = np.eye(count)
         s_temp = len(ops_temp)
-        
+
         t_matrix = np.block([[identity_temp, np.zeros((count, s_temp))],
                   [np.zeros((s_temp, count)), d_matrix_temp]
                   ])
-        
+
         d_matrix = np.matmul(d_matrix, t_matrix)
-        
+
         t_list.append(t_matrix)
         ips_temp = np.delete(ips_temp,0)
         ops_temp = np.delete(ops_temp,0)
@@ -110,8 +110,8 @@ def create_ds_matrix2(final_state, input_state):
     """
 
     count = 0
-    if len(final_state) > len(input_state):
-        raise Exception("Incoherent dimensions of states")
+    assert len(final_state) <= len(input_state)
+    #    raise Exception("Incoherent dimensions of states")
 
     ips_temp = input_state
     ops_temp = final_state
@@ -185,8 +185,8 @@ def match2perm(ds_mat):
     sum1 = np.sum(perm, axis = 0)
     sum2 = np.sum(perm, axis = 1)
     for i in range(dim):
-        if sum1[i] != 1 or sum2[i] != 1:
-            raise Exception("not perm")
+        assert sum1[i] == 1 and  sum2[i] == 1
+
 
     return perm
 
@@ -228,11 +228,11 @@ def permutation_mat_list(ds_mat):
 
 def locc_povm_func(final_state, ini_state):
     """function for creating list of povm and permutation matrices"""
-    
+
     final_state = concat_zeros(final_state, ini_state)
-    
+
     #maj_cehck = check_majorisation(final_state, ini_state)
-    ds, tmat_list = create_ds_matrix(final_state, ini_state)
+    ds, _ = create_ds_matrix(final_state, ini_state)
     perm_list, prob_list =  permutation_mat_list(ds)
     povm_list = []
     num_perm_mat = len(prob_list)

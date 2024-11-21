@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Aug 11 18:25:33 2023
+Created on Tue Nov  5 21:12:34 2024
 
 @author: hsharma4
 """
+
 
 import numpy as np
 #from qutip import *
@@ -123,11 +124,13 @@ def func_for_lr(opstate, ipstate):
 
     return l, r
 
+
+
 def func_for_gamma(opstate, ipstate):
     """func for creating gamma vector"""
 
-    assert np.shape(ipstate)[0] >= np.shape(opstate)[0]
-    #    raise Exception("Incoherent dimensions of states")
+    if np.shape(ipstate)[0] < np.shape(opstate)[0]:
+        raise Exception("Incoherent dimensions of states")
 
     l_array, r_array = func_for_lr(opstate, ipstate)
     len_r = len(r_array)

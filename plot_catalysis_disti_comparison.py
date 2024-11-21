@@ -16,21 +16,23 @@ sys.path.append(os.path.dirname(__file__))
 dir_name = os.path.dirname(__file__)
 
 #data_location = '/2024-06-14_cat_disti_comparison/94732'
-data_location = '/2024-11-05_depol_channel_comparison/232545'#122431, 121820 #141740
+data_location = '/2024-11-14_depol_channel_comparison/193222'#122431, 121820 #141740
 with open(dir_name+'/data'+data_location+'.pkl', 'rb') as f:
     data_dict_loaded = pickle.load(f)
     f.close()
 
 #print(data_dict_loaded.keys())
 
-fid_raw_list = data_dict_loaded["fid_raw_list"]
-prob_in_state_list = data_dict_loaded["alpha_list"]
-#prob_in_state_list = data_dict_loaded["prob_in_state_list"]
+#fid_raw_list = data_dict_loaded["fid_raw_list"]
+#prob_in_state_list = data_dict_loaded["alpha_list"]
+prob_in_state_list = data_dict_loaded["prob_in_state_list"]
 
-xmin = 1
-xmax = 70
+cat_fid = data_dict_loaded['cat_fid']
+
+xmin = 0
+xmax = 500
 prob_in_state_list = prob_in_state_list[xmin:xmax]
-#prob_in_state_list = data_dict_loaded["fid_raw_list"]
+
 
 
 #for i, ele in enumerate((prob_in_state_list)):
@@ -88,6 +90,36 @@ plt.xlabel('Probability of depolarisation')
 plt.xticks(rotation=45)
 plt.legend(["CEC", "NEC", "Distillation", "Catalyst reuse"])
 #plt.savefig(dir_name +'/plots' + data_location + "_fidelity" + ".png", dpi=1000, format="png", bbox_inches = 'tight')
+#plt.savefig(dir_name +'/plots' + data_location + "_fidelity" + ".pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
+"""
+plt.figure()
+plt.grid()
+plt.scatter(dist_list, fid_raw_list, s = 5, c = "blue")
+plt.yscale("log")
+plt.ylabel('Raw pair fidelity')
+#plt.xlabel('Raw state fidelity')
+plt.xlabel('Distance (km)')
+plt.xticks(rotation=45)
+#plt.legend(["Catalytic", "Non-catalytic", "Distillation", "DEJMPS"])
+#plt.savefig(dir_name+"/fidelity_vs_dist"+".png", dpi=1000, format="png")
+"""
+
+
+plt.figure()
+plt.grid()
+plt.plot(prob_in_state_list, cat_fid)
+#plt.gca().invert_xaxis()
+#plt.scatter(fid_raw_list, fid_dames_list, s = 4, c = "orange")
+
+#plt.scatter(kap, fip_nocat, s = 0.95)
+#plt.title('Fidelity')
+#plt.yscale("log")
+plt.ylabel('Fidelity')
+#plt.xlabel('Coherent error')
+plt.xlabel('Probability of depolarisation')
+plt.xticks(rotation=45)
+#plt.legend(["CEC", "NEC", "Distillation", "Catalyst reuse"])
+plt.savefig(dir_name +'/plots' + data_location + "_cat_fidelity" + ".png", dpi=1000, format="png", bbox_inches = 'tight')
 #plt.savefig(dir_name +'/plots' + data_location + "_fidelity" + ".pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
 """
 plt.figure()

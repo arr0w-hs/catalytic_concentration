@@ -17,32 +17,30 @@ import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(__file__))
 dir_name = os.path.dirname(__file__)
 
-from qutip import *
-from qutip.measurement import measure, measurement_statistics, measure_observable
+import qutip as qt
 from pathlib import Path
-from base_siv_catalytic_transform import *
-from base_siv_state_prep import prepare_dm_withreset, l_vector, r_vector
-from base_distillation import distillation, dejmps
-from base_depol_channels import *# new_state_pauli_x, new_state_pauli_z, new_state_depol, werner_state
+from base_transform import catalytic_conversion, non_catalytic_conversion, catalytic_conversion_reuse
+from base_distillation import distillation#, dejmps
+from base_depol_channels import  new_state_pauli_x1
 import numpy as np
 import pandas as pd
 
-zero = basis(2,0)
-one = basis(2,1)
-I = qeye(2)
-X = sigmax()
-Z = sigmaz()
-Y = sigmay()
+zero = qt.basis(2,0)
+one = qt.basis(2,1)
+I = qt.qeye(2)
+X = qt.sigmax()
+Z = qt.sigmaz()
+Y = qt.sigmay()
 H = 1/np.sqrt(2)*(X+Z)
 
 
 plt.rcParams.update({'font.size': 12})
 
-ph = basis(2, 0)
-spin = basis(2,0)
-nu = basis(2,0)
-psnn = tensor(ph, spin, nu, spin, nu)
-psn_dm = ket2dm(psnn)
+ph = qt.basis(2, 0)
+spin = qt.basis(2,0)
+nu = qt.basis(2,0)
+psnn = qt.tensor(ph, spin, nu, spin, nu)
+psn_dm = qt.ket2dm(psnn)
 
 alpha_list = []
 prob_in_state_list = []
@@ -76,16 +74,16 @@ fip_nocat_list = []
 fip_dist_list = []
 fip_dames_list = []
 fip_cat_reuse_list = []
+cat_fid = []
 
-n = 10
-
+n = 50
 """preparing the bell states"""
 
 for i in range(n):
     print(i)
     
-    prob_in_state = 1#1-0.25*i/n #0.95
-    alpha = 1 - i/n*0.25
+    prob_in_state = 1-0.5*i/n #0.95
+    alpha = 0.9#1 - i/n*0.25
 
     #print(prob_in_state)
     #final_state = r_state(alpha, prob_in_state)
@@ -98,10 +96,12 @@ for i in range(n):
     #swc, afadf, aadsg = schmidt_decomp_of_dm(final_state)
     #ops = [0.5, 0.5]
     #print(swc, "swc")
+    #print(final_state)
     
     fid_cat, prob_cat, post_locc_state, carbon_cat_st = catalytic_conversion(final_state)
+    #print(fid_cat, prob_cat)
     fid_nocat, prob_nocat, post_locc_state_nocat, _ = non_catalytic_conversion(final_state)
-    fid_dist, prob_dist, _ = distillation(final_state, ideal_state, 0)
+    fid_dist, prob_dist, _ = distillation(final_state, 0)
     #fid_dames, prob_dames = dejmps(final_state, 0)
     #print( fid_dist, prob_dist, "dist")#fid_dames, prob_dames, "dames",
     #print(fid_nocat, prob_nocat)
@@ -113,7 +113,7 @@ for i in range(n):
     fid_reuse, prob_reuse, out_state_reuse, flag = catalytic_conversion_reuse(final_state, cat_post)
     #print(fid_cat, "fid cat")
     #print(fid_reuse, "fid reuse")
-
+    cat_fid.append(qt.fidelity(carbon_cat_st, cat_post))
     fid_cat_list.append(1-fid_cat)
     fid_nocat_list.append(1-fid_nocat)
     fid_dist_list.append(1-fid_dist)
@@ -133,14 +133,14 @@ for i in range(n):
     fip_cat_reuse_list.append(fid_reuse*prob_reuse)
     
     cat_state.append((carbon_cat_st[0]))
-    cat_fid_post = fidelity(carbon_cat_st, cat_post)
+    cat_fid_post = qt.fidelity(carbon_cat_st, cat_post)
     cat_fidelity.append(cat_fid_post)
 
 
-    bell_st = 1/np.sqrt(2)*(tensor(basis(2,0), basis(2,0)) + tensor(basis(2,1), basis(2,1)))
-    raw_fid = np.sqrt(fidelity(ideal_state, final_state))
-    fid_raw_one.append(fidelity(bell_st, final_state.ptrace([1,3])))
-    fid_raw_two.append(fidelity(bell_st, final_state.ptrace([2,4])))
+    bell_st = 1/np.sqrt(2)*(qt.tensor(qt.basis(2,0), qt.basis(2,0)) + qt.tensor(qt.basis(2,1), qt.basis(2,1)))
+    raw_fid = np.sqrt(qt.fidelity(ideal_state, final_state))
+    fid_raw_one.append(qt.fidelity(bell_st, final_state.ptrace([1,3])))
+    fid_raw_two.append(qt.fidelity(bell_st, final_state.ptrace([2,4])))
     fid_raw_list.append(1-(raw_fid))
     
     #print(raw_fid)
@@ -175,7 +175,7 @@ for i in range(n):
 data_dict = {
     "alpha_list": alpha_list,
     "prob_in_state_list": prob_in_state_list,
-    "fid_raw_list": fid_raw_list,
+    "cat_fid": cat_fid,
     "fid_cat_list": fid_cat_list,
     "fid_nocat_list": fid_nocat_list,
     "fid_dist_list": fid_dist_list,

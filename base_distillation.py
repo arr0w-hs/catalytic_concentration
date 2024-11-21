@@ -6,132 +6,146 @@ Created on Fri Dec 29 10:51:19 2023
 @author: hsharma4
 """
 
-import numpy as np
-import scipy as sc
-import math as math
-import pandas as pd
-import matplotlib.pyplot as plt
-from qutip import *
-from qutip.measurement import measure, measurement_statistics, measure_observable
-
 import sys
 import os
-sys.path.append(os.path.dirname(__file__))
-from base_locc import *
-from base_slocc import *
-from base_state_change import *
-from base_siv_state_prep import *
-from base_catalyst import *
-from updated_measurements import *
+
+import numpy as np
+import qutip as qt
+
 from syn2depol import depol_channel
+sys.path.append(os.path.dirname(__file__))
 
-
-Y = sigmay()
-X = sigmax()
-Z = sigmaz()
-I = qeye(2)
+zero = qt.basis(2,0)
+one = qt.basis(2,1)
+I = qt.qeye(2)
+X = qt.sigmax()
+Z = qt.sigmaz()
+Y = qt.sigmay()
 H = 1/np.sqrt(2)*(X+Z)
-ketbra0 = ket2dm(basis(2, 0))
-ketbra1 = ket2dm(basis(2, 1))
-plus = ket2dm((basis(2, 0)+basis(2, 1)).unit())
-minus = ket2dm((basis(2, 0)-basis(2, 1)).unit())
+
+ketbra0 = qt.ket2dm(qt.basis(2, 0))
+ketbra1 = qt.ket2dm(qt.basis(2, 1))
+plus = qt.ket2dm((qt.basis(2, 0)+qt.basis(2, 1)).unit())
+minus = qt.ket2dm((qt.basis(2, 0)-qt.basis(2, 1)).unit())
 
 S = ketbra0 + 1j*ketbra1
 
+def err_cenotn(theta):
+    """errr cenotn"""
 
-"""for a given permutation number from 0 to 5, returns the permutation for alice and bob"""
+    cnot = qt.tensor(ketbra0, I)+qt.tensor(ketbra1, X)
+    cnot_bar = qt.tensor(ketbra0, X)+qt.tensor(ketbra1, I)
+    #print(cnot_bar)
+    err_cnot =  (np.cos(theta)*qt.tensor(I,I) - 1j*np.sin(theta)*cnot_bar)*cnot
+
+    return err_cnot
+
+def err_cnnote(theta):
+    """errr cnnote"""
+
+    cnot = ([[1,0,0,0],[0,0,0,1],[0,0,1,0],[0,1,0,0]])
+    cnot = qt.Qobj(cnot, dims = [[2,2],[2,2]])
+    cnot_bar = ([[0,0,1,0],[0,1,0,0],[1,0,0,0],[0,0,0,1]])
+    cnot_bar = qt.Qobj(cnot_bar, dims = [[2,2],[2,2]])
+    err_cnot =  (np.cos(theta)*qt.tensor(I,I) - 1j*np.sin(theta)*cnot_bar)*cnot
+
+    return err_cnot
+
+def swap_en(theta_en, theta_ne):
+    """function for swapping erroneous swaps with different cnots"""
+
+    swap = err_cenotn(theta_en)*err_cnnote(theta_ne)*err_cenotn(theta_en)
+
+    return swap
+
+
+def swap_en_a(cnot_error_en, cnot_error_ne):
+    """
+    swap en a and b are for swapping the states of electron and nu
+    at alice and bobs nodes
+
+    --input--
+    the cnot fidelities of e and n as controls
+
+    --returns--
+    swap operator for alice and bob
+    """
+
+    swap_a = qt.tensor(I,swap_en(cnot_error_en, cnot_error_ne),I,I)
+
+    return swap_a
+
+def swap_en_b(cnot_error_en, cnot_error_ne):
+    """bob's version of swap error"""
+    swap_b = qt.tensor(I,I,I,swap_en(cnot_error_en, cnot_error_ne))
+
+    return swap_b
+
+
+
 def permutation_unitary(permutation_num):
-    if permutation_num >5:
-        raise Exception ("wrong permutation number")
-        
+    """for a given permutation number from 0 to 5, returns the permutation for alice and bob"""
+
+    assert permutation_num <= 5 #("wrong permutation number")
+
     perm_mat_alice = I
     perm_mat_bob = I
     for i in range(permutation_num):
         perm_mat_alice = ((i+1)%2)*(H*perm_mat_alice)+(i%2)*(perm_mat_alice*S*H)
         perm_mat_bob = ((i+1)%2)*(H*perm_mat_bob)+(i%2)*(perm_mat_bob*H*S*H*S)
-        
+
     return perm_mat_alice, perm_mat_bob
 
-"""if qubit is 0, bell state in spin is permuted
-   if qubit is 1, bell state in nu is permuted"""
 def permutation_distillation(psn, permutation_num, qubit):
+    """if qubit is 0, bell state in spin is permuted
+       if qubit is 1, bell state in nu is permuted"""
+
     perm_alice, perm_bob = permutation_unitary(permutation_num)
-    
-    perm_mat_alice = (qubit%2)*tensor(I, perm_alice, I,I,I)+((qubit+1)%2)*tensor(I,I, perm_alice, I,I)
-    perm_mat_bob = (qubit%2)*tensor(I,I,I, perm_bob, I)+((qubit+1)%2)*tensor(I,I,I,I, perm_bob)    
-    
+
+    perm_mat_alice = ((qubit%2)*qt.tensor(I, perm_alice, I,I,I)
+                      +((qubit+1)%2)*qt.tensor(I,I, perm_alice, I,I))
+
+    perm_mat_bob = ((qubit%2)*qt.tensor(I,I,I, perm_bob, I)
+                    +((qubit+1)%2)*qt.tensor(I,I,I,I, perm_bob))
+
     psn = perm_mat_alice*perm_mat_bob*psn*perm_mat_alice.dag()*perm_mat_bob.dag()
-    
+
     return psn
-   
-"""psn is the psn density matrix
-   person is alice or bob
-   basis is z (0), x (1) or y (2) bases
-   target can be spin (0) or nu (1)"""
-
-def coinc_distillation1(psn, mea_basis, control, err_rate):
-    
-    if control == 0:
-        psn = psn
-    elif control == 1:
-        psn = swap_en_b(err_rate, err_rate)*psn*swap_en_b(err_rate, err_rate).dag()
-    elif control ==2:
-        psn = swap_en_a(err_rate, err_rate)*psn*swap_en_a(err_rate, err_rate).dag()
-    else:
-        psn = swap_en_a(err_rate, err_rate)*psn*swap_en_a(err_rate, err_rate).dag()
-        psn = swap_en_b(err_rate, err_rate)*psn*swap_en_b(err_rate, err_rate).dag()
-    
-    zero = basis(2,0)
-    one = basis(2,1)
-    bell_st = 1/np.sqrt(2)*(tensor(zero,zero,zero,zero,zero) + 
-                                     tensor(zero,one,zero,one,zero))
-    
-    if mea_basis == 1:
-        psn = tensor(I,I,H,I,H)*psn*tensor(I,I,H,I,H).dag()
-    elif mea_basis == 2:
-        psn = tensor(I,I,S*H,I,S*H).dag()*psn*tensor(I,I,S*H,I,S*H)
-    
-    bell_st1 = tensor(I, Z, I, I, I)*bell_st
-    prob_dist = bell_st.dag()*psn*bell_st + bell_st1.dag()*psn*bell_st1
-    #print(prob_dist)
-    fid_dist = (bell_st.dag()*psn*bell_st/prob_dist[0,0])[0,0]
-    psn_final = fid_dist*bell_st*bell_st.dag() + bell_st1.dag()*psn*bell_st1*bell_st1*bell_st1.dag()
-
-    return psn_final, np.real(fid_dist), np.real(prob_dist[0,0])
 
 def coinc_distillation_final(psn, mea_basis, control, err_rate):
-    
-    if control == 0:
-        psn = psn
-    elif control == 1:
+
+    """psn is the psn density matrix
+       person is alice or bob
+       basis is z (0), x (1) or y (2) bases
+       target can be spin (0) or nu (1)"""
+
+    if control == 1:
         psn = swap_en_b(err_rate, err_rate)*psn*swap_en_b(err_rate, err_rate).dag()
     #elif control ==2:
     #    psn = swap_en_a(err_rate, err_rate)*psn*swap_en_a(err_rate, err_rate).dag()
     #else:
     #    psn = swap_en_a(err_rate, err_rate)*psn*swap_en_a(err_rate, err_rate).dag()
     #    psn = swap_en_b(err_rate, err_rate)*psn*swap_en_b(err_rate, err_rate).dag()
-    
-    zero = basis(2,0)
-    one = basis(2,1)
-    bell_st = 1/np.sqrt(2)*(tensor(zero,zero,zero,zero,zero) + 
-                                     tensor(zero,one,zero,one,zero))
-    
+
+    bell_st = 1/np.sqrt(2)*(qt.tensor(zero,zero,zero,zero,zero) +
+                                     qt.tensor(zero,one,zero,one,zero))
+
     if mea_basis == 1:
-        psn = tensor(I,I,H,I,H)*psn*tensor(I,I,H,I,H).dag()
+        psn = qt.tensor(I,I,H,I,H)*psn*qt.tensor(I,I,H,I,H).dag()
     elif mea_basis == 2:
-        psn = tensor(I,I,S*H,I,S*H*X).dag()*psn*tensor(I,I,S*H,I,S*H*X)
-    
-    meas0 = ket2dm(zero)
+        psn = qt.tensor(I,I,S*H,I,S*H*X).dag()*psn*qt.tensor(I,I,S*H,I,S*H*X)
+
+    meas0 = qt.ket2dm(zero)
     meas1 = zero*one.dag()
-    
-    meas0 = tensor(I, I, meas0, I, meas0)
-    meas1 = tensor(I, I, meas1, I, meas1)
+
+    meas0 = qt.tensor(I, I, meas0, I, meas0)
+    meas1 = qt.tensor(I, I, meas1, I, meas1)
 
     psn_final = meas0*psn*meas0.dag()+meas1*psn*meas1.dag()
     prob = psn_final.tr()
     psn_final = psn_final.unit()
-    
-    fid_dist = fidelity(bell_st, psn_final)
+
+    fid_dist = qt.fidelity(bell_st, psn_final)
 
     return psn_final, np.real(fid_dist), prob
 
@@ -140,35 +154,30 @@ def coinc_distillation_final(psn, mea_basis, control, err_rate):
    if control == 10, then alice nu and bob spin is control
    if control == 11, then alice and bob nu is control"""
 def cnot_distillation(psn, err_rate, control):
-    
-    cnot_mat = (control%2)*err_cenotn(err_rate) + ((control+1)%2)*err_cnnote(err_rate)
-    
+    """cnots during distillation"""
+
+    cnot_mat = ((control%2)*err_cenotn(err_rate) +
+                ((control+1)%2)*err_cnnote(err_rate))
+
     if control == 0:
         cnot_mat_a = err_cenotn(err_rate)
         cnot_mat_b = err_cenotn(err_rate)
     elif control == 1:
         cnot_mat_a = err_cenotn(err_rate)
         cnot_mat_b = err_cnnote(err_rate)
-    #elif control == 2:
-    #    cnot_mat_a = err_cnnote(err_rate)
-    #    cnot_mat_b = err_cenotn(err_rate)
-    #elif control == 3:
-    #    cnot_mat_a = err_cnnote(err_rate)
-    #    cnot_mat_b = err_cnnote(err_rate)
 
-    cnot_mat = tensor(I,cnot_mat_a,cnot_mat_b)
+    cnot_mat = qt.tensor(I,cnot_mat_a,cnot_mat_b)
 
     psn = cnot_mat*psn*cnot_mat.dag()
-    return psn    
+    return psn
 
-def distillation(prepared_state, perfect_state, cnot_err):
+def distillation(prepared_state, cnot_err):
+    """function for distillation"""
     fid_list = []
     prob_list = []
     fip_list = []
-    
-    fid_list1 = []
-    prob_list1 = []
-    
+
+
     psn_list = []
     psn_list1 = []
     op_list = []
@@ -183,59 +192,43 @@ def distillation(prepared_state, perfect_state, cnot_err):
         op_list.append(perm_num)
         psn_list.append(psn)
         #perf_psn_list.append(perf_psn)
-        
+
         """permutation on nu qubits"""
     for i in range(len(psn_list)):
         for perm_num in range(6):
             psn_list1.append(permutation_distillation(psn_list[i], perm_num, 1))
             #perf_psn_list1.append(permutation_distillation(perf_psn_list[i], perm_num, 1))
             op_list1.append([op_list[i], perm_num])
-            
+
     psn_list.clear()
     perf_psn_list.clear()
     op_list.clear()
-    
+
     """four different types of cnot that can happen"""
     for i in range(len(psn_list1)):
         for cnot_control in range(2):
             for meas_basis in range(3):
                 psn_post_cnot = cnot_distillation(psn_list1[i], cnot_err, cnot_control)
-                psn1, fid_disti, prob_disti = coinc_distillation_final(psn_post_cnot, meas_basis, cnot_control, cnot_err)
-                
-                
+                _, fid_disti, prob_disti = coinc_distillation_final(psn_post_cnot, meas_basis, cnot_control, cnot_err)
+
+
                 op_list.append([op_list1[i], meas_basis, cnot_control])
                 fid_list.append(fid_disti)
                 prob_list.append(prob_disti)
                 fip_list.append(fid_disti*prob_disti)
-    
+
     psn_list1.clear()
     perf_psn_list1.clear()
     op_list1.clear()
-    
-    zero = basis(2,0)
-    one = basis(2,1)
-    bell_st = 1/np.sqrt(2)*(tensor(zero,zero,zero,zero,zero) + 
-                                     tensor(zero,one,zero,one,zero))
 
-    #for i in range(len(psn_list)):
-    #    psn_list1.append(fidelity(psn_list[i], bell_st))
-    
-    #maxarg = np.argmax(psn_list1)
-    
-    #fid = psn_list1[maxarg]
-    #print(op[2])
-    
-    #maxarg1 = np.argmax(fip_list)
-    #maxarg1 = np.argmax(prob_list)
     maxarg1 = np.argmax(fid_list)
     fidy = fid_list[maxarg1]
-    op = op_list[maxarg1]
-    #print(op_list[maxarg1])
-    #print(op)
-    #print(fidy)
-    return fidy, prob_list[maxarg1], op
+    oper = op_list[maxarg1]
+
+    return fidy, prob_list[maxarg1], oper
 
 def distillation_operation(prepared_state, operation_list, sqe_err, cnot_err):
+    """function for operational errors during distillation"""
     sqe_list = operation_list[0]
     meas = operation_list[1]
     cnot_control = operation_list[2]
@@ -265,138 +258,6 @@ def distillation_operation(prepared_state, operation_list, sqe_err, cnot_err):
         psn_post_cnot = depol_channel(psn_post_cnot, sqe_err, 2, num_qubits)
         psn_post_cnot = depol_channel(psn_post_cnot, sqe_err, 4, num_qubits)
 
-    psn1, fid_disti, prob_disti = coinc_distillation_final(psn_post_cnot, meas, cnot_control, 0)
+    _, fid_disti, prob_disti = coinc_distillation_final(psn_post_cnot, meas, cnot_control, 0)
 
     return fid_disti, prob_disti
-
-def dejmps(prepared_state, cnot_err):
-    #print(H*S)
-    #print((H*S*H)*S*H*S)
-    #print(H*Z)
-    
-    rotation = tensor(I, S.conj()*H, S.conj()*H, S*H, S*H)
-    psn = rotation*prepared_state*rotation.dag()
-    
-    cnot_mat_a = err_cenotn(cnot_err)
-    cnot_mat_b = err_cenotn(cnot_err)
-    
-    psn = tensor(I, cnot_mat_a, cnot_mat_b)*psn*tensor(I, cnot_mat_a, cnot_mat_b).dag()
-    
-    zero = basis(2,0)
-    one = basis(2,1)
-    bell_st = 1/np.sqrt(2)*(tensor(zero,zero,zero,zero,zero) + 
-                                     tensor(zero,one,zero,one,zero))
-    
-    meas0 = ket2dm(zero)
-    meas1 = zero*one.dag()
-    meas0 = tensor(I, I, meas0, I, meas0)
-    meas1 = tensor(I, I, meas1, I, meas1)
-    
-    psn_final = meas0*psn*meas0.dag()+meas1*psn*meas1.dag()
-    #print(fidelity(bell_st, (meas0*psn*meas0.dag()).unit()) + fidelity(bell_st, (meas1*psn*meas1.dag()).unit()))
-    prob = psn_final.norm()
-    psn_final = psn_final.unit()
-    
-    fid_dist = fidelity(bell_st, psn_final)
-    #print(fid_dist)
-    
-    
-    return fid_dist, prob
-    
-    
-def dejmps1(prepared_state, cnot_err):
-    #print(H*S)
-    #print((H*S*H)*S*H*S)
-    #print(H*Z)
-    
-    rotation = tensor(I, S.conj()*H, S.conj()*H, S*H, S*H)
-    psn = rotation*prepared_state*rotation.dag()
-    
-    cnot_mat_a = err_cenotn(cnot_err)
-    cnot_mat_b = err_cnnote(cnot_err)
-    
-    psn = tensor(I, cnot_mat_a, cnot_mat_b)*psn*tensor(I, cnot_mat_a, cnot_mat_b).dag()
-    
-    zero = basis(2,0)
-    one = basis(2,1)
-    bell_st = 1/np.sqrt(2)*(tensor(zero,zero,zero,zero,zero) + 
-                                     tensor(zero,one,zero,one,zero))
-    
-    meas00 = ket2dm(zero)
-    meas01 = (plus)
-    meas10 = zero*one.dag()
-    meas11 = X*H*(minus)
-    meas0 = tensor(I, I, meas00, I, meas01)
-    meas1 = tensor(I, I, meas10, I, meas11)
-    
-    psn_final = meas0*psn*meas0.dag()+meas1*psn*meas1.dag()
-    prob = psn_final.tr()
-    psn_final = psn_final.unit()
-    
-    fid_dist = fidelity(bell_st, psn_final)
-    print(fid_dist)
-    print(fidelity(bell_st, meas0*psn*meas0.dag()) + fidelity(bell_st, meas1*psn*meas1.dag()))
-    return fid_dist, prob
-
-def bbpsw(prepared_state, cnot_err):
-    #print(H*S)
-    #print((H*S*H)*S*H*S)
-    #print(H*Z)
-    
-    rotation = tensor(I, S.conj()*H, S.conj()*H, S*H, S*H)
-    psn = prepared_state
-    
-    cnot_mat_a = err_cenotn(cnot_err)
-    cnot_mat_b = err_cenotn(cnot_err)
-    
-    psn = tensor(I, cnot_mat_a, cnot_mat_b)*psn*tensor(I, cnot_mat_a, cnot_mat_b).dag()
-    
-    zero = basis(2,0)
-    one = basis(2,1)
-    bell_st = 1/np.sqrt(2)*(tensor(zero,zero,zero,zero,zero) + 
-                                     tensor(zero,one,zero,one,zero))
-    
-    meas0 = ket2dm(zero)
-    meas1 = zero*one.dag()
-    meas0 = tensor(I, I, meas0, I, meas0)
-    meas1 = tensor(I, I, meas1, I, meas1)
-    
-    psn_final = meas0*psn*meas0.dag()+meas1*psn*meas1.dag()
-    prob = psn_final.tr()
-    psn_final = psn_final.unit()
-    
-    fid_dist = fidelity(bell_st, psn_final)
-    
-    return fid_dist, prob
-
-
-
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    

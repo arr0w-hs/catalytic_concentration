@@ -13,36 +13,36 @@ import time
 from pathlib import Path
 
 import pickle
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from qutip import *
+import qutip as qt
+
 from qutip.qip.operations import expand_operator#, gate_expand_2toN, gate_expand_1toN
 sys.path.append(os.path.dirname(__file__))
 dir_name = os.path.dirname(__file__)
 
-from base_siv_catalytic_transform import prepare_carbon_spins, pre_conversion_process, catalytic_conversion, schmidt_decomp_of_dm
-from base_slocc import self_tensor_prod, concat_zeros, func_for_gamma, slocc_povm_func
-from base_siv_state_prep import err_cenotn, basis2schmidt
+from base_transform import  pre_conversion_process, schmidt_decomp_of_dm
+from base_slocc import concat_zeros, func_for_gamma, slocc_povm_func
+#from base_siv_state_prep import basis2schmidt
 from qutip.qip.operations import cnot
 from base_locc_alt import locc_operations, slocc_unitary
 from bqskit import compile
-from base_siv_state_prep import prepare_dm_withreset, l_vector, r_vector
-from base_depol_channels import new_state_depol, new_state_pauli_z, new_state_pauli_x1
+from base_depol_channels import new_state_pauli_x1#new_state_depol, new_state_pauli_z, 
 
-from bqskit.compiler import Compiler, MachineModel
+from bqskit.compiler import Compiler
 from bqskit.ir.circuit import Circuit
-from bqskit.passes import ForEachBlockPass
-from bqskit.passes import LEAPSynthesisPass
-from bqskit.passes import QFASTDecompositionPass, QPredictDecompositionPass, QSearchSynthesisPass
-from bqskit.passes import ScanningGateRemovalPass, ExhaustiveGateRemovalPass
-from bqskit.passes import UnfoldPass, ToU3Pass
-from bqskit.ir.gates import CZGate, RZGate, SqrtXGate, U3Gate, CNOTGate
+from bqskit.passes import ForEachBlockPass, LEAPSynthesisPass
+from bqskit.passes import QFASTDecompositionPass, ScanningGateRemovalPass, UnfoldPass
 
-X = sigmax()
-Z = sigmaz()
-Y = sigmay()
-I = qeye(2)
+
+
+zero = qt.basis(2,0)
+one = qt.basis(2,1)
+I = qt.qeye(2)
+X = qt.sigmax()
+Z = qt.sigmaz()
+Y = qt.sigmay()
+H = 1/np.sqrt(2)*(X+Z)
 
 
 
@@ -58,15 +58,15 @@ def basis2schmidt(psn_st):
 
     U, S, Vh = np.linalg.svd(sn_matrix_form, full_matrices=True)
     #print(np.allclose(sn_matrix_form, np.dot(U* S, Vh)))
-    s, u, v = Qobj(S), Qobj(U).dag(), Qobj(Vh).dag()
-    basis_matrix = tensor( I, u, v.trans()).full()
-    basis_matrix = Qobj(basis_matrix, dims = [psn_dims[0], psn_dims[0]])
+    s, u, v = qt.Qobj(S), qt.Qobj(U).dag(), qt.Qobj(Vh).dag()
+    basis_matrix = qt.tensor( I, u, v.trans()).full()
+    basis_matrix = qt.Qobj(basis_matrix, dims = [psn_dims[0], psn_dims[0]])
 
     psn = psn_st.full()
-    psn = Qobj(psn, dims = psn_dims)#
+    psn = qt.Qobj(psn, dims = psn_dims)#
     psn_schmidt_basis = (basis_matrix*psn).tidyup()
     #psn_schmidt_basis = psn_schmidt_basis.full()
-    #psn_schmidt_basis = Qobj(psn_schmidt_basis, dims = psn_dims)
+    #psn_schmidt_basis = qt.Qobj(psn_schmidt_basis, dims = psn_dims)
 
     return psn_schmidt_basis, basis_matrix, s
 
@@ -120,7 +120,7 @@ def extend_perm(perm_list, num_qubits):
                   [lower_zeros, identity_temp]
                   ])
 
-        extended_perm_mat = Qobj(extended_perm_mat, dims = initial_dims)
+        extended_perm_mat = qt.Qobj(extended_perm_mat, dims = initial_dims)
         extended_perm_list.append(extended_perm_mat)
         #print(extended_perm_mat)
 
@@ -144,7 +144,7 @@ def unitary2circ(list_unitaries, cat_flag):
     v_circ = compile_unitary(list_unitaries[3])
 
     slocc_uni = slocc_unitary(list_unitaries[1])
-    slocc_circ = compile_unitary(Qobj(slocc_uni))
+    slocc_circ = compile_unitary(qt.Qobj(slocc_uni))
     
     for i, ele in enumerate(operations):
         #if i == 4 or i ==3 or i==1:
@@ -158,7 +158,7 @@ def unitary2circ(list_unitaries, cat_flag):
         povm_circ = compile_unitary(povm_unitary)
 
         for j, elem in enumerate(perm_list):
-            perm_list[j] = compile_unitary(Qobj(elem))
+            perm_list[j] = compile_unitary(qt.Qobj(elem))
         
         one_round_circ.append(povm_circ)
         one_round_circ.append(perm_list)
@@ -200,10 +200,10 @@ def depol_channel(rho_in, err_prob, qubit_loc, num_qubits):
 
 def gate_unitary(element, num_qubits, bob_flag, cat_flag, perm_flag):
     """
-    function for converting circuit element into a high dim Qobj unitary
+    function for converting circuit element into a high dim qt.Qobj unitary
 
     inputs:
-        element is the circuit element (not Qobj)
+        element is the circuit element (not qt.Qobj)
         total num of qubits at alice's side (including ancilla)
         bob_flag == 1 means that the unitary acts on bob's qubits
     returns:
@@ -224,7 +224,7 @@ def gate_unitary(element, num_qubits, bob_flag, cat_flag, perm_flag):
     elif str(element.gate) == "U3Gate" and bob_flag == 0:
         loc = list(element.location)
         gate_uni = np.asarray(element.get_unitary())
-        gate_uni = Qobj(gate_uni)
+        gate_uni = qt.Qobj(gate_uni)
         #output_uni = gate_expand_1toN(gate_uni, num_qubits, int(loc[0]+1))
         output_uni = expand_operator(gate_uni, dims=dimens, targets=[int(loc[0]+1)])
         
@@ -239,7 +239,7 @@ def gate_unitary(element, num_qubits, bob_flag, cat_flag, perm_flag):
     elif str(element.gate) == "U3Gate" and bob_flag == 1:
         loc = list(element.location)
         gate_uni = np.asarray(element.get_unitary())
-        gate_uni = Qobj(gate_uni)
+        gate_uni = qt.Qobj(gate_uni)
         #output_uni = gate_expand_1toN(gate_uni, num_qubits, int(loc[0]+1))
         #output_uni = gate_expand_1toN(gate_uni, num_qubits, int(loc[0]+cat_flag+4))
         output_uni = expand_operator(gate_uni, dims=dimens, targets=[int(loc[0]+cat_flag+bobs_qubits)])
@@ -265,7 +265,7 @@ def gate_unitary(element, num_qubits, bob_flag, cat_flag, perm_flag):
         #print(int(loc[0]+bobs_qubits))
         #print(num_qubits)
         gate_uni = np.asarray(element.get_unitary())
-        gate_uni = Qobj(gate_uni)
+        gate_uni = qt.Qobj(gate_uni)
         #output_uni = gate_expand_1toN(gate_uni, num_qubits, int(loc[0]+1))
         #output_uni = gate_expand_1toN(gate_uni, num_qubits, int(loc[0]+cat_flag+4))
         output_uni = expand_operator(gate_uni, dims=dimens, targets=[int(loc[0]+bobs_qubits)])
@@ -282,7 +282,7 @@ def gate_depol(rho_in, element, sq_err, cnot_err, num_qubits, bob_flag, cat_flag
 
     inputs:
         input dm
-        element is the circuit element (not Qobj)
+        element is the circuit element (not qt.Qobj)
         errors rates
         total num of qubits at alice's side (including ancilla)
         bob_flag == 1 means that the unitary acts on bob's qubits
@@ -352,7 +352,7 @@ def depol_final_state(syn_circ, in_state, sq_error_rate, cnot_error_rate, num_qu
 
     inputs:
         in_state is the dm of the input
-        syn_circ is the input synthesised circuit (not Qobj)
+        syn_circ is the input synthesised circuit (not qt.Qobj)
         error_rates: error  probability
         catalyst_flag: tells if there is catalyst or not,
                        catalyst_flag == 1 means there is a catalyst
@@ -389,8 +389,8 @@ def measure_aux(input_dm, num_qubits, cat_flag):
     
     returns: the output states after the two measurements"""
     dimens = [2]*num_qubits
-    zero = ket2dm(basis(2,0))
-    one_1 = X*ket2dm(basis(2,1)) #X is for taking the aux qubit to 0 after measurement
+    zero = qt.ket2dm(qt.basis(2,0))
+    one_1 = X*qt.ket2dm(qt.basis(2,1)) #X is for taking the aux qubit to 0 after measurement
     
     #mea0 = gate_expand_1toN(zero, num_qubits, int(3+cat_flag))
     #mea1 = gate_expand_1toN(one, num_qubits, int(3+cat_flag))
@@ -453,11 +453,11 @@ def to_be_syn_cat(prepared_dm):
 def add_aux(prepared_dm, cat_flag):
 
 
-    aux = ket2dm(basis(2,0))
+    aux = qt.ket2dm(qt.basis(2,0))
     if cat_flag == 1:
-        psn_aux_dm = tensor(prepared_dm, aux).permute([0,1,2,3,7,4,5,6])
+        psn_aux_dm = qt.tensor(prepared_dm, aux).permute([0,1,2,3,7,4,5,6])
     else:
-        psn_aux_dm = tensor(prepared_dm, aux).permute([0,1,2,5,3,4])
+        psn_aux_dm = qt.tensor(prepared_dm, aux).permute([0,1,2,5,3,4])
 
     return psn_aux_dm
 
@@ -474,7 +474,7 @@ def apply_povm_n_perm(povm_circuit, permu_circ_list, prepared_dm, cat_flag, sq_e
 
     mea_dm0, mea_dm1 = measure_aux(out_state, num_qubits, cat_flag)
 
-    #print(Qobj(permu_circ_list[0].get_unitary()).tidyup())
+    #print(qt.Qobj(permu_circ_list[0].get_unitary()).tidyup())
     #print(permu_circ_list[1].get_unitary())
     #applying permutations
     os0 = depol_final_state(permu_circ_list[0], mea_dm0, sq_error_rate, cnot_error_rate, num_qubits, 0, cat_flag, 1)
@@ -573,8 +573,8 @@ def split_circuit(in_uni):
     cirq1 = compile(cirq1)
     cirq2 = compile(cirq2)
 
-    #uni1 = Qobj(cirq1.get_unitary())
-    #uni2 = Qobj(cirq2.get_unitary())
+    #uni1 = qt.Qobj(cirq1.get_unitary())
+    #uni2 = qt.Qobj(cirq2.get_unitary())
 
     #print(uni2*uni1)
     print(cirq1.gate_counts)
@@ -586,37 +586,7 @@ def split_circuit(in_uni):
 if __name__ == "__main__":
     #err_cnot_circuit(0.01)
     #print(dudeness)
-    g = 8.38
-    gamma_0 = 0.123
-    gamma_1 = 0.123
-    delta = 248
-    kappa = 21.8
-    loss_coeff = 0.05
-    param = [kappa,0,g,gamma_0,gamma_1,delta,0]
 
-    cnot_errore = [0, 0, 0, 0]
-    rr = r_vector(param, param, loss_coeff)
-    lvec = l_vector(param, param, loss_coeff)
-    dist = 0
-    num_reset = 2
-
-    ph = basis(2, 0)
-    spin = basis(2,0)
-    nu = basis(2,0)
-    psnn = tensor(ph, spin, nu, spin, nu)
-    psn_dm = ket2dm(psnn)
-    
-    cnot_err = 0.001
-    cnot_errore = [cnot_err, cnot_err, cnot_err, cnot_err]
-
-    single_err = 0.001
-    sqe_error = [0,0,single_err]
-
-    #loss_coeff = 0.0005*i
-
-    param = [kappa,0,g,gamma_0,gamma_1,delta,0]
-    rr = r_vector(param, param, loss_coeff)
-    lvec = l_vector(param, param, loss_coeff)
 
     #final_state, final_state_loss, prob_final_state, prob_final_loss, mea_value = prepare_dm_withreset(
     #        psn_dm, cnot_errore, rr, lvec, num_reset, sqe_error, dist)
@@ -734,7 +704,7 @@ if __name__ == "__main__":
     ops = [0.5, 0.5]
     ips = [xx, 1-xx]
 
-    i_state = ket2dm(tensor(basis(2,0), basis(2,0), basis(2,0)))
+    i_state = ket2dm(qt.tensor(basis(2,0), basis(2,0), basis(2,0)))
 
     ips = self_tensor_prod(ips, 3)
     ops = concat_zeros(ops, ips)
