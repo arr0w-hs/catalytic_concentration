@@ -11,7 +11,8 @@ import sys
 import os
 import numpy as np
 import qutip as qt
-
+sys.path.append(os.path.dirname(__file__))
+dir_name = os.path.dirname(__file__)
 from base_slocc import concat_zeros, self_tensor_prod
 from base_locc import locc_povm_func, k_t_transform, create_t_matrix, locc_povm_on_state
 #from base_state_change import vec2dm
@@ -180,11 +181,58 @@ def unitary_on_auxiliary(povm_set):
         unitary_temp[0,1] = 1*np.sqrt(povm_ele1[i,i])#b
         unitary_temp[1,1] = -1*np.sqrt(povm_ele0[i,i])#d
         unitary_temp = np.real(unitary_temp)
-        #print(unitary_temp)
+        # print(unitary_temp)
         unitary_temp = qt.Qobj(unitary_temp)
         unitary_list.append(unitary_temp)
 
     return unitary_list
+
+def one_round_unitary_list(num_qubits, unitary_list):
+    """
+    takes in the number of data qubits and list of the unitaries to make
+    a unitary on the space of all the data qubits and auxiliary qubits
+
+    returns: list of controlled-unitaries that multiply to each other to 
+    give on big unitary on all the data qubits + auxiliary
+    """
+
+
+    max_num_unitaries = int(2**num_qubits)
+    num_unitaries = len(unitary_list)
+    # print(num_unitaries, "num_unitaries")
+    uni_list = []
+
+    for k in range(num_unitaries):
+        unitary_final = 0
+        for i in range(max_num_unitaries):
+            binary_val = np.binary_repr(i, width=num_qubits)
+            # print(binary_val)
+            """qubit dm is the state of the data qubits for a certain unitary"""
+            qubit_dm = qt.ket2dm(qt.basis(2, int(binary_val[0])))
+            for j in range(num_qubits-1):
+                initialized_qubit1 = qt.basis(2, int(binary_val[j+1]))
+                qubit_dm = qt.tensor(qubit_dm, qt.ket2dm(initialized_qubit1))
+    
+            """unitary temp is the tensor product of data qubit initializations
+               and the unitary on the data qubit"""
+            if i == k:
+                unitary_temp = qt.tensor(qubit_dm, unitary_list[i])
+            else:
+                unitary_temp = qt.tensor(qubit_dm, qt.qeye(2))
+                # continue
+            """unitary final is the unitary on data + aux qubits"""
+            unitary_final += unitary_temp
+        I = qt.qeye(2)
+        uni_list.append(unitary_final)
+        # unitary_final = qt.tensor(I,I,I,I)
+        # for ele in uni_list:
+        #     unitary_final *= ele
+
+
+    # print(len(uni_list))
+    # print(uni_list)
+
+    return uni_list
 
 def one_round_unitary(num_qubits, unitary_list):
     """
@@ -197,10 +245,11 @@ def one_round_unitary(num_qubits, unitary_list):
     unitary_final = 0
     max_num_unitaries = int(2**num_qubits)
     num_unitaries = len(unitary_list)
+    # print(num_unitaries, "num_unitaries")
 
     for i in range(max_num_unitaries):
         binary_val = np.binary_repr(i, width=num_qubits)
-
+        # print(binary_val)
         """qubit dm is the state of the data qubits for a certain unitary"""
         qubit_dm = qt.ket2dm(qt.basis(2, int(binary_val[0])))
         for j in range(num_qubits-1):
@@ -213,9 +262,12 @@ def one_round_unitary(num_qubits, unitary_list):
             unitary_temp = qt.tensor(qubit_dm, unitary_list[i])
         else:
             unitary_temp = qt.tensor(qubit_dm, qt.qeye(2))
-            #continue
+            # continue
         """unitary final is the unitary on data + aux qubits"""
         unitary_final += unitary_temp
+        # uni = np.real((unitary_final*unitary_final.dag()).tidyup().full())
+        # # uni = [int]
+        # print(uni)
 
     return unitary_final
 
@@ -248,6 +300,9 @@ def locc_operations(final_state, input_state):
         output = one_round_povm_func(out_state, inp_state)#, num_qubits)
         povms = output[0]
         permutations = output[1]
+        # for ele in povms:
+        #     print(np.shape(ele), "ele")
+
         #print(permutations)
 
         """we continue in case povms have only one element that is identity"""
@@ -270,15 +325,17 @@ def locc_operations(final_state, input_state):
 
         """we get the final unitary for initializing data+auxiliary qubits
         for each round of communication separately"""
-        ut_final = one_round_unitary(num_qubits, ut_list)
+        ut_final_list = one_round_unitary_list(num_qubits, ut_list)
+        # ut_final1 = one_round_unitary(num_qubits, ut_list)
+        # print((ut_final*ut_final1.dag()).tidyup())
 
         #print(ut.dag()*ut)
         #print(len(povms))
-        one_round_operation.append(ut_final)
+        one_round_operation.append(ut_final_list)
         one_round_operation.append(permutations)
         operation_list.append(one_round_operation)
         """measuring the aux qubits"""
-
+        # print()
 
     #print((operation_list))
     #assert len(operation_list) == number_of_communication_rounds
@@ -309,3 +366,5 @@ if __name__ == "__main__":
     ops = concat_zeros(ops, ips)
 
     locc_operations(ops, ips)
+
+

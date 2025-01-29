@@ -83,7 +83,7 @@ def new_state_pauli_x1(a_val, prob):
     #print(phi_tilde.dag()*phi_tilde)
 
     bell_st1 = prob*qt.ket2dm(phi_tilde) + (1-prob)/3*(
-
+        #qt.ket2dm(phi_tilde)+
         qt.ket2dm(qt.tensor(X,I)*phi_tilde)+
         qt.ket2dm(qt.tensor(Z,I)*phi_tilde)+
         qt.ket2dm(qt.tensor(X*Z,I)*phi_tilde)
@@ -96,5 +96,38 @@ def new_state_pauli_x1(a_val, prob):
     bell_st = qt.tensor(qt.ket2dm(zero), bell_st)
     bell_st = bell_st.permute([0,1,3,2,4])
     assert np.real(bell_st.tr()) >= 0.9
+
+    return bell_st
+
+def new_state_pauli_x2(a_val, prob):
+    """this error adds depolarizing noise to coherent error state"""
+
+    phi_plus = np.sqrt(0.5)*(qt.tensor(zero,zero) +
+                             qt.tensor(one,one))
+
+    phi_tilde = np.sqrt(a_val)*phi_plus + np.sqrt((1-a_val)/3)*(
+        qt.tensor((Z), I)*phi_plus + qt.tensor((X), I)*phi_plus+
+        qt.tensor((X*Z), I)*phi_plus)
+
+    # phi_tilde = np.sqrt(a_val)*phi_plus + np.sqrt(1-a_val)*(
+    #     qt.tensor(X, I)*phi_plus)
+
+    #print(phi_tilde.dag()*phi_tilde)
+
+    bell_st1 = qt.ket2dm(phi_tilde)# + (1-prob)/3*(qt.tensor(I,I))
+        # qt.ket2dm(phi_tilde)+
+        # qt.ket2dm(qt.tensor(X,I)*phi_tilde)+
+        # qt.ket2dm(qt.tensor(Z,I)*phi_tilde)+
+        # qt.ket2dm(qt.tensor(X*Z,I)*phi_tilde)
+        # )
+    II = qt.tensor(I,I)
+    #print(bell_st1)
+    bell_st = (qt.tensor(bell_st1, II)+qt.tensor(II, bell_st1))
+    # print(bell_st.norm())
+
+    """putting ph in front of the four entangled spins"""
+    bell_st = qt.tensor(qt.ket2dm(zero), bell_st)
+    bell_st = bell_st.permute([0,1,3,2,4])
+    # assert np.real(bell_st.tr()) >= 0.9
 
     return bell_st

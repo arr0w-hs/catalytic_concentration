@@ -19,7 +19,7 @@ dir_name = os.path.dirname(__file__)
 
 import qutip as qt
 from pathlib import Path
-from base_transform import catalytic_conversion, non_catalytic_conversion, catalytic_conversion_reuse
+from base_transform import catalytic_conversion, non_catalytic_conversion, catalytic_conversion_reuse, closest_pure_state
 from base_distillation import distillation#, dejmps
 from base_depol_channels import  new_state_pauli_x1
 import numpy as np
@@ -32,6 +32,10 @@ X = qt.sigmax()
 Z = qt.sigmaz()
 Y = qt.sigmay()
 H = 1/np.sqrt(2)*(X+Z)
+S = qt.ket2dm(zero)+1j*qt.ket2dm(one)
+# print(S*H*S*H*S*H)
+# print(Z*H*S)
+# print(H*S*Z*X)
 
 
 plt.rcParams.update({'font.size': 12})
@@ -75,16 +79,21 @@ fip_dist_list = []
 fip_dames_list = []
 fip_cat_reuse_list = []
 cat_fid = []
+eigen_val_list = []
 
-n = 50
+n = 10
 """preparing the bell states"""
 
 for i in range(n):
+
     print(i)
     
-    prob_in_state = 1-0.5*i/n #0.95
-    alpha = 0.9#1 - i/n*0.25
+    prob_in_state = 0.9999-0.20*i/n#0.95#
+    alpha = 0.9#0.9999 - i/n*0.21
+    #print(prob_in_state, "prob_in")
+    p = prob_in_state
 
+    fid_lower_bound = ((4*p-1)/3)**2 + 1/4*((1-p)/3)**2 + 5*(4*p-1)*(1-p)/9
     #print(prob_in_state)
     #final_state = r_state(alpha, prob_in_state)
     #final_state = new_state_depol(alpha, prob_in_state)
@@ -92,20 +101,25 @@ for i in range(n):
     #final_state = new_state_pauli_x(alpha, prob_in_state)
     
     ideal_state = new_state_pauli_x1(1, 1)
-    #print(ideal_state)
-    #swc, afadf, aadsg = schmidt_decomp_of_dm(final_state)
-    #ops = [0.5, 0.5]
-    #print(swc, "swc")
-    #print(final_state)
-    
+
+    _, eigen_val = closest_pure_state(final_state)
+    eigen_val_list.append(eigen_val)
+
+
+    # print(ideal_state)
+    # swc, afadf, aadsg = schmidt_decomp_of_dm(final_state)
+    # ops = [0.5, 0.5]
+    # print(swc, "swc")
+    # print(final_state)
+    #
     fid_cat, prob_cat, post_locc_state, carbon_cat_st = catalytic_conversion(final_state)
-    #print(fid_cat, prob_cat)
-    fid_nocat, prob_nocat, post_locc_state_nocat, _ = non_catalytic_conversion(final_state)
+    # print(fid_cat, prob_cat)
+    fid_nocat, prob_nocat, post_locc_state_nocat, _ = non_catalytic_conversion(final_state)#, prob_in_state, alpha)
     fid_dist, prob_dist, _ = distillation(final_state, 0)
-    #fid_dames, prob_dames = dejmps(final_state, 0)
-    #print( fid_dist, prob_dist, "dist")#fid_dames, prob_dames, "dames",
-    #print(fid_nocat, prob_nocat)
-    #print(fid_cat, prob_cat)
+    # fid_dames, prob_dames = dejmps(final_state, 0)
+    # print( fid_dist, prob_dist, "dist")#fid_dames, prob_dames, "dames",
+    # print(fid_nocat, prob_nocat, "fid no cat")
+    # print(fid_cat, prob_cat, "fid cat")
     cat_post = post_locc_state.ptrace([2,5])
     #print(post_locc_state.ptrace([1,4]))
     #print(post_locc_state.ptrace([2,5]))
@@ -114,6 +128,12 @@ for i in range(n):
     #print(fid_cat, "fid cat")
     #print(fid_reuse, "fid reuse")
     cat_fid.append(qt.fidelity(carbon_cat_st, cat_post))
+    #fid_cat_list.append(1-fid_cat)
+
+    # a = 1/12*(11*p**2 + 2*p - 1)
+    # a = 1/36*(57 * p**2 - 24*p + 3)
+    # a = 1/3*(4*p**2-2*p+1)
+
     fid_cat_list.append(1-fid_cat)
     fid_nocat_list.append(1-fid_nocat)
     fid_dist_list.append(1-fid_dist)
@@ -149,9 +169,51 @@ for i in range(n):
 
     prob_in_state_list.append(1-prob_in_state)
     alpha_list.append(1-alpha)
+    #print()
+# prob_in_state_list = [1-ele for ele in prob_in_state_list]
+# eigen_val_list = [1-ele for ele in eigen_val_list]
 
+
+
+
+
+# for i in range(n):
+
+#     print(i)
     
-#plt.figure()
+#     prob_in_state = 0.9999-0.25*i/n #0.95
+#     alpha = 0.90#1 - i/n*0.15
+#     #print(prob_in_state, "prob_in")
+#     p = prob_in_state
+
+#     fid_lower_bound = ((4*p-1)/3)**2 + 1/4*((1-p)/3)**2 + 5*(4*p-1)*(1-p)/9
+#     #print(prob_in_state)
+#     #final_state = r_state(alpha, prob_in_state)
+#     #final_state = new_state_depol(alpha, prob_in_state)
+#     final_state = new_state_pauli_x1(alpha, prob_in_state)
+#     #final_state = new_state_pauli_x(alpha, prob_in_state)
+
+#     ideal_state = new_state_pauli_x1(1, 1)
+
+#     _, eigen_val = closest_pure_state(final_state)
+#     eigen_val_list.append(eigen_val)
+#     fid_nocat, prob_nocat, post_locc_state_nocat, _ = non_catalytic_conversion(final_state, prob_in_state, alpha)
+
+#     fid_nocat_list.append(1-fid_nocat)
+#     prob_in_state_list.append(1-prob_in_state)
+#     prob_nocat_list.append(prob_nocat)
+
+
+
+# p1 = [ele**2 for ele in prob_in_state_list]
+# plt.figure()
+# plt.grid()
+# plt.plot(prob_in_state_list, eigen_val_list, 'o')
+# # plt.plot(prob_in_state_list, p1)
+# plt.xlabel("prob_out_state")
+# plt.ylabel("max_eigenval")
+# plt.show()
+# #plt.figure()
 #plt.grid()
 #plt.scatter(alpha_list, fid_raw_list, s = 5, c = "blue")
 #fid_nocat_list = np.asarray(fid_nocat_list ).reshape((n,n))
@@ -171,6 +233,9 @@ for i in range(n):
 #a = np.random.random((16, 16))
 #plt.imshow(fid_dist_list, cmap='hot', interpolation='nearest')
 #plt.show()
+# z = np.polyfit(prob_in_state_list, fid_cat_list, 1)
+# p = np.poly1d(z)
+#print(z)
 
 data_dict = {
     "alpha_list": alpha_list,
@@ -216,17 +281,17 @@ with open(__file__) as f:
     data = f.read()
     f.close()
 
-metadata_dict = {
-    "num of total points n": n,
-    "alpha_max": np.max(alpha_list),
-    "alpha_min": np.min(alpha_list),
-    "prob_in_state_max": np.max(prob_in_state_list),
-    "prob_in_state_min": np.min(prob_in_state_list),
-    "depol_channel": "x"
-    }
+# metadata_dict = {
+#     "num of total points n": n,
+#     "alpha_max": np.max(alpha_list),
+#     "alpha_min": np.min(alpha_list),
+#     "prob_in_state_max": np.max(prob_in_state_list),
+#     "prob_in_state_min": np.min(prob_in_state_list),
+#     "depol_channel": "x"
+#     }
 
-with open(data_directory + time_str +'_metadata.txt', mode="w") as f:
-    f.write(str(metadata_dict))
-    f.close()
+# with open(data_directory + time_str +'_metadata.txt', mode="w") as f:
+#     f.write(str(metadata_dict))
+#     f.close()
 
 

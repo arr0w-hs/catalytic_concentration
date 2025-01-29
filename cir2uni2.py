@@ -18,11 +18,11 @@ dir_name = os.path.dirname(__file__)
 from qutip import *
 from qutip.measurement import measure, measurement_statistics, measure_observable
 from pathlib import Path
-from base_siv_catalytic_transform import *
-from base_siv_state_prep import prepare_dm_withreset, l_vector, r_vector
-from base_distillation import distillation, dejmps, distillation_operation
+from base_state_transform import *
+# from base_siv_state_prep import prepare_dm_withreset, l_vector, r_vector
+from base_distillation import distillation, distillation_operation
 from syn2depol import apply_locc_conversion, apply_schmidt_conversion, add_aux, apply_slocc_conversion,to_be_syn_nc, measure_aux
-from base_depol_channels import new_state_depol, new_state_pauli_z, new_state_pauli_x1
+from base_depol_channels import new_state_pauli_x1#new_state_depol, new_state_pauli_z,
 from bqskit.ir.circuit import Circuit
 from qutip_qip.circuit import QubitCircuit
 from syn2depol import extend_perm
@@ -221,6 +221,8 @@ cir4list.append(perm4)
 
 locc_cir = [cir0[0], cir1list, cir2[0], cir3list, cir4list, cir5[0]]
 cat = [locc_cir, cir_slocc[1], cir_slocc[2], cir_slocc[2]]
+
+)
 #print(u_op.gate_counts)
 
 # print(len(cat[0]))
@@ -247,7 +249,7 @@ p = 0.95
 final_state = new_state_pauli_x1(a, p)
 ideal_state = new_state_pauli_x1(1, 1)
 
-fid_dist, prob, ops = distillation(final_state, ideal_state, 0)
+fid_dist, prob, ops = distillation(final_state, 0)
 print(fid_dist, prob, "distillation")
 print(ops)
 fid_nocat, prob_nocat, post_locc_state_nocat = oper_err(list_circ_nc, final_state, 0, 0, 0)
@@ -270,7 +272,7 @@ prob_dist_list = []
 
 
 #print(output_state_qobj)
-for i in range(20):
+for i in range(5):
     print(i)
     t1 = time.time()
     err = (i)*0.0001
@@ -302,14 +304,14 @@ plt.figure()
 plt.plot(x, fid_cat_list, label = "CEC")
 plt.plot(x, fid_list, label = "SEC")
 plt.plot(x, fid_dist_list, label = "Distillation")
-#plt.yscale("log")
+plt.xscale("log")
 plt.legend()
 plt.ylabel('Fidelity')
 plt.xlabel('Error rate')
 plt.xticks(rotation=45)
 plt.grid()
-plt.savefig(dir_name+"/_fidelity_cat_sqe11.png", dpi=1000, format="png", bbox_inches = 'tight')
-plt.savefig(dir_name+"/_fidelity_cat_sqe11.pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
+# plt.savefig(dir_name+"/_fidelity_cat_sqe11.png", dpi=1000, format="png", bbox_inches = 'tight')
+# plt.savefig(dir_name+"/_fidelity_cat_sqe11.pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
 #plt.show()
 
 plt.figure()
@@ -317,12 +319,12 @@ plt.grid()
 plt.plot(x, prob_cat_list, label = "CEC")
 plt.plot(x, prob_list, label = "SEC")
 plt.plot(x, prob_dist_list, label = "Distillation")
-#plt.yscale("log")
+plt.xscale("log")
 plt.legend()
 plt.ylabel('Probability of success')
 plt.xlabel('Error rate')
 plt.xticks(rotation=45)
-plt.savefig(dir_name+"/_probability_cat_sqe11" + ".png", dpi=1000, format="png", bbox_inches = 'tight')
-plt.savefig(dir_name+"/_probability_cat_sqe11" + ".pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
-#plt.show()
+# plt.savefig(dir_name+"/_probability_cat_sqe11" + ".png", dpi=1000, format="png", bbox_inches = 'tight')
+# plt.savefig(dir_name+"/_probability_cat_sqe11" + ".pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
+plt.show()
 print(1)

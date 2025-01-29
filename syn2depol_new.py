@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jun 25 11:17:44 2024
+Created on Tue Jan 28 17:40:41 2025
 
 @author: hsharma4
+for compilation of locc unitary
+the locc operations in this list are 
+in a list whose product gives the final unitary
 """
+
 
 
 import sys
@@ -16,6 +20,7 @@ import pickle
 import numpy as np
 import pandas as pd
 import qutip as qt
+import argparse
 
 from qutip.qip.operations import expand_operator#, gate_expand_2toN, gate_expand_1toN
 sys.path.append(os.path.dirname(__file__))
@@ -34,7 +39,10 @@ from bqskit.ir.circuit import Circuit
 from bqskit.passes import ForEachBlockPass, LEAPSynthesisPass
 from bqskit.passes import QFASTDecompositionPass, ScanningGateRemovalPass, UnfoldPass
 
-
+parser = argparse.ArgumentParser(description="round number")
+parser.add_argument("--i", type=int, help="index of round list")
+args, _ = parser.parse_known_args()
+round_number = args.i
 
 zero = qt.basis(2,0)
 one = qt.basis(2,1)
@@ -44,7 +52,23 @@ Z = qt.sigmaz()
 Y = qt.sigmay()
 H = 1/np.sqrt(2)*(X+Z)
 
+ts = pd.Timestamp.today(tz = 'Europe/Stockholm')
+date_str = str(ts.date())
+time_str = ts.time()
+time_str = str(time_str.hour)+ str(time_str.minute) + str(time_str.second)
+print(time_str)
 
+#data_directory = os.path.join(dir_name+"/test_circuits", date_str+"/")
+data_directory = os.path.join(dir_name+"/test_circuits", date_str+"_cat_disti_comparison_nc/")
+#plots_directory = os.path.join(dir_name+"/plots", date_str+"_cat_disti_comparison/")
+
+date_folder = Path(data_directory)
+if date_folder.exists():
+    print("date folder exists")
+else:
+    os.mkdir(data_directory)
+
+round_number = 5
 
 
 def basis2schmidt(psn_st):
@@ -138,31 +162,43 @@ def unitary2circ(list_unitaries, cat_flag):
     operations = list_unitaries[0]
     operations_out = []
     num_rounds = len(operations)
-    print(num_rounds)
+    metadata_list = []
+    # print(num_rounds)
 
-    u_circ = compile_unitary(list_unitaries[2])
-    v_circ = compile_unitary(list_unitaries[3])
+    u_circ = 0#compile_unitary(list_unitaries[2])
+    v_circ = 0#compile_unitary(list_unitaries[3])
 
     slocc_uni = slocc_unitary(list_unitaries[1])
-    print(np.real(slocc_uni.full()))
-    slocc_circ = compile_unitary(qt.Qobj(slocc_uni))
+    # print(np.real(slocc_uni.full()))
+    slocc_circ = 0#compile_unitary(qt.Qobj(slocc_uni))
 
     for i, ele in enumerate(operations):
-        #if i == 4 or i ==3 or i==1:
 
+        if i != round_number:
+            continue
+
+
+        povm_circ_list = []
         one_round_circ = []
-        povm_unitary = ele[0]
-        print(np.real(povm_unitary.full()))
-        #print(povm_unitary*povm_unitary.dag())
+        povm_unitary_list = ele[0]
         perm_list = extend_perm(ele[1], 2+cat_flag)
 
-        time1 = time.time()
-        povm_circ = compile_unitary(povm_unitary)
+        for ii, eleme in enumerate(povm_unitary_list):
+            metadata_list.append( (i, ii))
+            with open(data_directory + time_str +'_metadata.txt', mode="w") as f:
+                f.write(str(metadata_list))
+                f.close()
+            povm_circ_list.append(compile_unitary(eleme))
+
 
         for j, elem in enumerate(perm_list):
             perm_list[j] = compile_unitary(qt.Qobj(elem))
 
-        one_round_circ.append(povm_circ)
+
+        # time1 = time.time()
+
+
+        one_round_circ.append(povm_circ_list)
         one_round_circ.append(perm_list)
 
         operations_out.append(one_round_circ)
@@ -388,48 +424,6 @@ def to_be_syn_cat(prepared_dm):
 
 
 
-def split_circuit(in_uni):
-    t1 = time.time()
-    circuit = Circuit.from_unitary(in_uni.full())
-
-    # We now define our synthesis workflow utilizing the QFAST algorithm.
-    workflow = [
-        QFASTDecompositionPass(),
-        ForEachBlockPass([
-            LEAPSynthesisPass(),  # LEAP performs native gate instantiation
-            ScanningGateRemovalPass(),  # Gate removal optimizing gate counts
-        ]),
-        UnfoldPass(),
-    ]
-
-    # Finally let's create create the compiler and execute the CompilationTask.
-    with Compiler() as compiler:
-        compiled_circuit = compiler.compile(circuit, workflow)
-        print(compiled_circuit.gate_counts)
-
-    len_cirq = (len(compiled_circuit))
-
-    cirq1 = Circuit(compiled_circuit.num_qudits)
-    cirq2 = Circuit(compiled_circuit.num_qudits)
-    for i, ele in enumerate(compiled_circuit):
-        if i <= np.ceil(len_cirq/2):
-            cirq1.append(ele)
-        else:
-            cirq2.append(ele)
-
-    cirq1 = compile(cirq1)
-    cirq2 = compile(cirq2)
-
-    #uni1 = qt.Qobj(cirq1.get_unitary())
-    #uni2 = qt.Qobj(cirq2.get_unitary())
-
-    #print(uni2*uni1)
-    print(cirq1.gate_counts)
-    print(cirq2.gate_counts)
-    print(time.time()-t1)
-    return cirq1, cirq2
-
-
 if __name__ == "__main__":
     #err_cnot_circuit(0.01)
     #print(dudeness)
@@ -452,8 +446,8 @@ if __name__ == "__main__":
     # list_unit = to_be_syn_nc(final_state)
     list_unit = to_be_syn_cat(final_state)
     #print(list_unit[1], list_unit[2], list_unit[3])
-    list_circs = unitary2circ(list_unit, 0)
-
+    list_circs = unitary2circ(list_unit, 1)
+    # print(list_circs)
     #povm_uni = list_unit[0][4][0]
     #print(povm_uni)
 
@@ -510,21 +504,7 @@ if __name__ == "__main__":
 
     """
     #print(list_circs)
-    ts = pd.Timestamp.today(tz = 'Europe/Stockholm')
-    date_str = str(ts.date())
-    time_str = ts.time()
-    time_str = str(time_str.hour)+ str(time_str.minute) + str(time_str.second)
-    print(time_str)
 
-    #data_directory = os.path.join(dir_name+"/test_circuits", date_str+"/")
-    data_directory = os.path.join(dir_name+"/test_circuits", date_str+"_cat_disti_comparison_nc/")
-    #plots_directory = os.path.join(dir_name+"/plots", date_str+"_cat_disti_comparison/")
-
-    date_folder = Path(data_directory)
-    if date_folder.exists():
-        print("date folder exists")
-    else:
-        os.mkdir(data_directory)
 
     data_dict = {
         "list_unitary": list_unit,
@@ -533,59 +513,8 @@ if __name__ == "__main__":
         "p": p,
         }
 
-    with open(data_directory+ time_str +'.pkl', 'wb') as f:  # open a text file
+    with open(data_directory+ time_str +'_' + str(round_number) + '.pkl', 'wb') as f:  # open a text file
         pickle.dump(data_dict, f)
 
 
-    """
-    x = []
-    y = []
-    start_time = time.time()
-    #print(cnot())
-    #main()
-    #print(CRXGate.qasm_name)
-    #print(i)
-    #xx = 0.5+i/1000
-    #x.append(xx)
-    xx = 0.15
-    ops = [0.5, 0.5]
-    ips = [xx, 1-xx]
 
-    i_state = ket2dm(qt.tensor(basis(2,0), basis(2,0), basis(2,0)))
-
-    ips = self_tensor_prod(ips, 3)
-    ops = concat_zeros(ops, ips)
-    #print(ips)
-    gamma_ideal = func_for_gamma(ops, ips)
-    #print(gamma_ideal)
-    #povm_out_list, prob_out_list_junk, perm_out_list = locc_povm_func(gamma_ideal,
-    #                                                         ips)
-    operations = locc_operations(gamma_ideal, ips)
-    num_comm_rounds = len(operations)
-    print(num_comm_rounds, "num_comm_rounds")
-
-    for i in range(1):
-        #povm_unitary = operations[i][0]
-        permu_list = operations[i][1]
-        print(np.shape(permu_list[0]))
-        #print(ini_uni*ini_uni.dag())
-        ini_uni = operations[i][0]
-        print(np.shape(ini_uni))
-        #ssc = compile_unitary(ini_uni)
-        #print(np.real(ini_uni1))
-        os = depol_final_state(ssc, i_state, 0, 0, 4)
-        ps = ini_uni*i_state*ini_uni.dag()
-        print(fidelity(os, ps))
-
-        permu_list = extend_perm(permu_list, i_state)
-        num_perm = len(permu_list)
-        for i in range(num_perm):
-            ini_uni = permu_list[i]
-            os = depol_final_state(i_state, ini_uni, 0, 0, 3)
-            ps = ini_uni*i_state*ini_uni.dag()
-            print(fidelity(os, ps))
-        print(" ")
-
-
-("--- %s seconds ---" % (time.time() - start_time))
-"""

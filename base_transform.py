@@ -10,12 +10,12 @@ import sys
 import os
 import numpy as np
 import qutip as qt
-
+sys.path.append(os.path.dirname(__file__))
 from base_locc import locc_povm_func
 from base_slocc import concat_zeros, func_for_gamma, majorisation_check, slocc_povm_func
 from base_catalyst import catalytic_concentration
+from base_depol_channels import  new_state_pauli_x2
 
-sys.path.append(os.path.dirname(__file__))
 
 zero = qt.basis(2,0)
 one = qt.basis(2,1)
@@ -23,15 +23,19 @@ I = qt.qeye(2)
 
 def closest_pure_state(density_mat):
     """func for finding closest pure state"""
+    #print(type(density_mat))
     eigen_array = density_mat.eigenstates()
-    #print(eigen_array)
+
     eigen_states = np.asarray(eigen_array[1])
     eigen_values = np.asarray(eigen_array[0])
+    #print((eigen_values))
 
     max_arg = np.argmax(eigen_values)
     max_eigenvalue = eigen_values[max_arg]
     max_eigenvector = eigen_states[max_arg]
     #")
+    #print(max_eigenvalue, "max eignevalue")
+    #print(max_eigenvector)
     return max_eigenvector, max_eigenvalue
 
 
@@ -45,7 +49,9 @@ def basis2schmidt(psn_st):
     psn_length = int(np.sqrt(psn_length))
     sn_matrix_form = np.reshape(sn_data, (psn_length, psn_length))
 
+
     u_mat, s_mat, v_herm_mat = np.linalg.svd(sn_matrix_form, full_matrices=True)
+    #print(s_mat)
     #print(np.allclose(sn_matrix_form, np.dot(U* S, Vh)))
     s_mat, u_mat, v_mat = qt.Qobj(s_mat), qt.Qobj(u_mat).dag(), qt.Qobj(v_herm_mat).dag()
     basis_matrix = qt.tensor( I, u_mat, v_mat.trans()).full()
@@ -59,12 +65,38 @@ def basis2schmidt(psn_st):
 
     return psn_schmidt_basis, basis_matrix, s_mat, u_mat, v_mat.trans()
 
-def schmidt_decomp_of_dm(psn_dm):
+def schmidt_decomp_of_dm1(psn_dm):
     """find the closest pure state, and the schmidt decomposition of it"""
-    psn_st, _ = closest_pure_state(psn_dm)
+    psn_st, max_eigen = closest_pure_state(psn_dm)
+
+    psn_dm =  qt.ket2dm(psn_st)
     #print(prob, "prob")
     psn_st, basis_mat, sc_mat, u_mat, v_mat = basis2schmidt(psn_st)
     psn_dm = basis_mat * psn_dm * basis_mat.dag()
+    schmidt_coeff = np.real((sc_mat.full())**2)
+    schmidt_coeff = np.reshape(schmidt_coeff, [len(schmidt_coeff)])
+
+    return schmidt_coeff, psn_dm, psn_st, [u_mat, v_mat], max_eigen
+
+def schmidt_decomp_of_dm(psn_dm):
+    """find the closest pure state, and the schmidt decomposition of it"""
+    psn_st, eigen_val = closest_pure_state(psn_dm)
+    # print(1-eigen_val)
+    # print(psn_st.norm())
+    #psn_dm = qt.ket2dm(psn_st)
+    #print(prob, "prob")
+    # psn_dm = new_state_pauli_x2(a, p)*(4*p-1)/3*(1-p)/3
+    # psn_dm =  eigen_val*qt.ket2dm(psn_st)
+    # print(eigen_val)
+
+    # psn_dm =  psn_dm - eigen_val*qt.ket2dm(psn_st)
+
+    psn_st, basis_mat, sc_mat, u_mat, v_mat = basis2schmidt(psn_st)
+
+
+    psn_dm = basis_mat * psn_dm * basis_mat.dag()
+    # a = [ele for ele in np.unique(psn_dm.full()) if ele >0.0001]
+    # print(a)
     schmidt_coeff = np.real((sc_mat.full())**2)
     schmidt_coeff = np.reshape(schmidt_coeff, [len(schmidt_coeff)])
 
@@ -204,6 +236,7 @@ def non_catalytic_conversion(prepared_dm):
     s_coeff, prepared_dm_schmidt_basis, _, _ = schmidt_decomp_of_dm(prepared_dm)
     input_state_array = np.reshape(np.real(s_coeff), [4])
 
+
     assert np.sum(input_state_array) != 0
     input_state_array = input_state_array/np.sum(input_state_array)
 
@@ -218,7 +251,7 @@ def non_catalytic_conversion(prepared_dm):
     """use function for gamma to find the ideal gamma that is needed"""
     gamma_ideal = func_for_gamma(output_state_array, input_state_array)
     assert np.sum(gamma_ideal) != 0
-    gamma_ideal = gamma_ideal/np.sum(gamma_ideal)
+    # gamma_ideal = gamma_ideal/np.sum(gamma_ideal)
 
 
     """use function for locc povms to find the ideal povms to get to gamma"""
@@ -286,7 +319,7 @@ def catalytic_conversion(prepared_dm):
     gamma_ideal = func_for_gamma(output_state_array, input_state_array)
 
     assert np.sum(gamma_ideal) != 0
-    gamma_ideal = gamma_ideal/np.sum(gamma_ideal)
+    # gamma_ideal = gamma_ideal/np.sum(gamma_ideal)
 
     majorisation_check(gamma_ideal, input_state_array)
 
@@ -358,8 +391,8 @@ def catalytic_conversion_reuse(prepared_dm, carbon_dm_input):
 
     """use function for gamma to find the ideal gamma that is needed"""
     gamma_ideal = func_for_gamma(output_state_array, input_state_array)
-    assert np.sum(gamma_ideal) != 0
-    gamma_ideal = gamma_ideal/np.sum(gamma_ideal)
+    # assert np.sum(gamma_ideal) != 0
+    # gamma_ideal = gamma_ideal/np.sum(gamma_ideal)
     #print(cat_array)
     #print(input_state_array)
     if np.any(input_state_array <= 1e-12):
@@ -391,3 +424,24 @@ def catalytic_conversion_reuse(prepared_dm, carbon_dm_input):
         fid = qt.fidelity(output_state_qobj, output_density_mat)
 
     return fid, np.real(probab), output_density_mat, flagg
+
+if __name__ == "__main__":
+    dm = new_state_pauli_x1(0.9, 0.8)
+
+    ea = dm.eigenstates()
+
+    eigenval = ea[0]
+    print(eigenval)
+    eigenst = ea[1]
+
+    ea_zip = list(zip(eigenval, eigenst))
+    dmm = 0
+    for u,v in ea_zip:
+        dmm += u*qt.ket2dm(v)
+
+    print(np.allclose(dmm.full(), dm.full()))
+
+    print(dmm.full())
+    print()
+    print(dm.full())
+    # (closest_pure_state(dm))
