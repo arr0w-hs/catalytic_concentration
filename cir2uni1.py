@@ -21,10 +21,10 @@ from base_state_transform import *
 # from base_siv_state_prep import prepare_dm_withreset, l_vector, r_vector
 from base_distillation import distillation, distillation_operation
 from syn2depol import depol_final_state, measure_aux
+from syn2depol import extend_perm
 from base_depol_channels import new_state_pauli_x1#new_state_depol, new_state_pauli_z,
 from bqskit.ir.circuit import Circuit
 from qutip_qip.circuit import QubitCircuit
-from syn2depol import extend_perm
 import numpy as np
 import pandas as pd
 import time

@@ -98,14 +98,34 @@ def basis2schmidt(psn_st):
 def compile_unitary(in_unitary):
     """compiling the unitary into a circut"""
     #print(in_unitary*in_unitary.dag())
-    in_unitary = in_unitary.full()
-    print(np.shape(in_unitary))
-    t1=  time.time()
-    syn_circuit = compile(in_unitary, max_synthesis_size = int(4))
-    print("compiled", time.time()-t1, "seconds")
+    # in_unitary = in_unitary.full()
+    # print(np.shape(in_unitary))
+    # t1=  time.time()
+    # syn_circuit = compile(in_unitary, max_synthesis_size = int(4))
+    # print("compiled", time.time()-t1, "seconds")
+
+
+    circuit = Circuit.from_unitary(in_unitary.full())
+    
+    # We now define our synthesis workflow utilizing the QFAST algorithm.
+    workflow = [
+        QFASTDecompositionPass(),
+        ForEachBlockPass([
+            LEAPSynthesisPass(),  # LEAP performs native gate instantiation
+            ScanningGateRemovalPass(),  # Gate removal optimizing gate counts
+        ]),
+        UnfoldPass(),
+    ]
+    
+    # Finally let's create create the compiler and execute the CompilationTask.
+    with Compiler() as compiler:
+        compiled_circuit = compiler.compile(circuit, workflow)
+        print(compiled_circuit.gate_counts)
+    
+    len_cirq = (len(compiled_circuit))
     #syn_circuit.compress()
 
-    return syn_circuit
+    return compiled_circuit
 
 def extend_perm(perm_list, num_qubits):
     """function for extending the dimensions of permutation unitaries
@@ -184,10 +204,11 @@ def unitary2circ(list_unitaries, cat_flag):
         perm_list = extend_perm(ele[1], 2+cat_flag)
 
         for ii, eleme in enumerate(povm_unitary_list):
-            metadata_list.append( (i, ii))
-            with open(data_directory + time_str +'_metadata.txt', mode="w") as f:
-                f.write(str(metadata_list))
-                f.close()
+            # metadata_list.append( (i, ii))
+            # with open(data_directory + time_str +'_metadata.txt', mode="w") as f:
+            #     f.write(str(metadata_list))
+            #     f.close()
+            print(i,ii)
             povm_circ_list.append(compile_unitary(eleme))
 
 

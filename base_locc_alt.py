@@ -167,6 +167,7 @@ def unitary_on_auxiliary(povm_set):
     assert len(povm_set) == 2
 
     dim_povm_ele = np.shape(povm_set[0])[0]
+    # print(dim_povm_ele)
 
     unitary_list = []
     for i in range(dim_povm_ele):
@@ -174,8 +175,9 @@ def unitary_on_auxiliary(povm_set):
         povm_ele0 = povm_set[0]
         povm_ele1 = povm_set[1]
 
-        unitary_temp = np.zeros((2,2))
 
+        unitary_temp = np.zeros((2,2))
+        print(np.sqrt(povm_ele0[i,i]), np.sqrt(povm_ele1[i,i]))
         unitary_temp[0,0] = np.sqrt(povm_ele0[i,i])#a
         unitary_temp[1,0] = np.sqrt(povm_ele1[i,i])#c
         unitary_temp[0,1] = 1*np.sqrt(povm_ele1[i,i])#b
@@ -229,7 +231,7 @@ def one_round_unitary_list(num_qubits, unitary_list):
         #     unitary_final *= ele
 
 
-    # print(len(uni_list))
+    print(len(uni_list))
     # print(uni_list)
 
     return uni_list
@@ -289,7 +291,7 @@ def locc_operations(final_state, input_state):
     for k in range(number_of_communication_rounds):
         one_round_operation = []
         inp_state = out_state_list[k]
-        #print(inp_state, "in state")
+        print(inp_state, "in state")
         out_state = out_state_list[k+1]
         #print(out_state, "out state")
         #print(" ")
