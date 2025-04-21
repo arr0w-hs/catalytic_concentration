@@ -13,16 +13,15 @@ in a list whose product gives the final unitary
 
 import sys
 import os
-import time
 from pathlib import Path
 
-import pickle
+
 import numpy as np
 import pandas as pd
 import qutip as qt
 import argparse
 
-from qutip.qip.operations import expand_operator#, gate_expand_2toN, gate_expand_1toN
+from qutip.qip.operations import expand_operator
 sys.path.append(os.path.dirname(__file__))
 dir_name = os.path.dirname(__file__)
 
@@ -30,20 +29,20 @@ from base_transform import  pre_conversion_process, schmidt_decomp_of_dm
 from base_slocc import concat_zeros, func_for_gamma, slocc_povm_func
 #from base_siv_state_prep import basis2schmidt
 from qutip.qip.operations import cnot
-from qutip import gates
+
 from base_locc_alt import locc_operations, slocc_operations
-from bqskit import compile
+
 from base_depol_channels import new_state_pauli_x1#new_state_depol, new_state_pauli_z,
 
-from bqskit.compiler import Compiler, GateSet, CompilationTask
+from bqskit.compiler import Compiler#, GateSet, CompilationTask
 from bqskit.ir.circuit import Circuit
-from bqskit.passes import ForEachBlockPass, LEAPSynthesisPass
-from bqskit.passes import QFASTDecompositionPass, ScanningGateRemovalPass, UnfoldPass, QSearchSynthesisPass
+#from bqskit.passes import ForEachBlockPass, LEAPSynthesisPass
+from bqskit.passes import QSearchSynthesisPass#, QFASTDecompositionPass, ScanningGateRemovalPass, UnfoldPass
 
-from bqskit.passes import SimpleLayerGenerator, WideLayerGenerator
-from bqskit.ir.gates import ISwapGate, PauliGate, CCPGate, RC3XGate
-from bqskit.ir.gates import RXXGate, RYYGate, RZZGate, U3Gate, CNOTGate
-from bqskit.passes.search import LayerGenerator
+from bqskit.passes import SimpleLayerGenerator#, WideLayerGenerator
+#from bqskit.ir.gates import ISwapGate, PauliGate, CCPGate, RC3XGate
+from bqskit.ir.gates import U3Gate, CNOTGate#,RXXGate, RYYGate, RZZGate
+#from bqskit.passes.search import LayerGenerator
 
 parser = argparse.ArgumentParser(description="round number")
 parser.add_argument("--i", type=int, help="index of round list")
@@ -75,52 +74,6 @@ else:
     os.mkdir(data_directory)
 
 round_number = 5
-
-# class CustomLayerGenerator(LayerGenerator):
-    
-#     def gen_initial_layer(self, target, data):
-#         """
-#         Here we will generate the first circuit that seeds the search space.
-        
-#         By default, the SimpleLayerGenerator places single-qudit gates
-#         on each qudit. Here let's do something a little more crazy
-#         to demonstrate the potential.
-#         """
-        
-#         init_circuit = Circuit(target.num_qudits, target.radixes)
-        
-#         # Place RXX Gates on consective pairs of qudits
-#         for i in range(init_circuit.num_qudits - 1):
-#             init_circuit.append_gate(RXXGate(), (i, i+1))
-        
-#         return init_circuit
-    
-#     def gen_successors(self, circuit, data):
-#         """
-#         During the search, this will be called when expanding a node.
-        
-#         By default, the SimpleLayerGenerator produces new circuits with
-#         one more block of gates on each valid edge. Again, let's be
-#         a little crazy here too.
-#         """
-        
-#         base_successor = circuit.copy()
-        
-#         # Apply a column of U3Gates
-#         for i in range(base_successor.num_qudits):
-#             base_successor.append_gate(U3Gate(), i)
-        
-#         successors = []
-        
-#         # Create 3 successors
-#         # Each one has a line of a specific type of gate.
-#         for gate in [CCPGate()]:
-#             successor = base_successor.copy()
-#             for i in range(base_successor.num_qudits - 1):
-#                 successor.append_gate(gate, (i, i+1))
-#             successors.append(successor)
-
-#         return successors
 
 def basis2schmidt(psn_st):
     psn_dims = psn_st.dims

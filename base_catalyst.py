@@ -91,7 +91,6 @@ def catalytic_concentration(outstate, instate, num_k, d_c):
     else:
         cat_final = cat_final/np.sum(cat_final)
         flg = 'success'
-    #print(cat_final)
     #cat_final = np.sort(cat_final)[::-1]
 
     pcr = -1*res.fun
@@ -100,8 +99,7 @@ def catalytic_concentration(outstate, instate, num_k, d_c):
 
     if gain >= 0.9999 and gain <= 1.0001:
         cat_final = [0.50, 0.50]
-    #print(gain)
-    #print(cat_final)
+        
     if gain > 50:
         print("gain > 50")
         print(cat_final, "catalyst state")

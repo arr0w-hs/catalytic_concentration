@@ -152,7 +152,6 @@ def create_adj_mat(ds_mat):
             if ds_mat[j,i] > 0:
                 adj_mat[i,dim+j] = 1
                 adj_mat[dim+j, i] = 1
-    #print(adj_mat)
 
     return adj_mat
 
@@ -255,9 +254,6 @@ def locc_povm_func(final_state, ini_state):
 
         np.fill_diagonal(povm, beta)
         povm_list.append(povm)
-        #print(np.linalg.matrix_rank(povm))
-        #print(np.nonzero(povm))
-    #print("ed")
 
     return povm_list, prob_list, perm_list
 

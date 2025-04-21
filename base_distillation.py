@@ -234,7 +234,6 @@ def distillation_operation(prepared_state, operation_list, sqe_err, cnot_err):
     cnot_control = operation_list[2]
 
     num_qubits = int(np.log2(prepared_state.shape[0]))
-    #print(num_qubits)
 
 
     psn = permutation_distillation(prepared_state, sqe_list[0], 0)

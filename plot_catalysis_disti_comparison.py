@@ -17,7 +17,7 @@ sys.path.append(os.path.dirname(__file__))
 dir_name = os.path.dirname(__file__)
 
 #data_location = '/2024-06-14_cat_disti_comparison/94732'
-data_location = '/2025-04-08_depol_channel_comparison/161846'#122431, 121820 #141740
+data_location = '/2025-04-21_depol_channel_comparison/164829'#122431, 121820 #141740
 with open(dir_name+'/data'+data_location+'.pkl', 'rb') as f:
     data_dict_loaded = pickle.load(f)
     f.close()
@@ -70,7 +70,7 @@ plt.yticks(fontsize = fs)
 plt.legend(fontsize = fs,
            handlelength=1.3, handleheight=0.5, labelspacing = 0.15)
 # plt.show()
-plt.savefig(dir_name +'/plots' + data_location + "_probability" + ".svg", dpi=1000, format="svg", bbox_inches = 'tight')
+# plt.savefig(dir_name +'/plots' + data_location + "_probability" + ".svg", dpi=1000, format="svg", bbox_inches = 'tight')
 # plt.savefig(dir_name +'/plots' + data_location + "_probability" + ".pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
 
 
@@ -103,7 +103,7 @@ plt.xticks(rotation=45, fontsize=fs)
 plt.yticks(fontsize = fs)
 plt.legend(fontsize = fs,
            handlelength=1.3, handleheight=0.5, labelspacing = 0.15)
-plt.savefig(dir_name +'/plots' + data_location + "_fidelity" + ".svg", dpi=1000, format="svg", bbox_inches = 'tight')
+# plt.savefig(dir_name +'/plots' + data_location + "_fidelity" + ".svg", dpi=1000, format="svg", bbox_inches = 'tight')
 # plt.savefig(dir_name +'/plots' + data_location + "_fidelity" + ".pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
 
 """
@@ -141,7 +141,7 @@ plt.legend(fontsize = fs,
            handlelength=1.3, handleheight=0.5, labelspacing = 0.15)
 
 #plt.legend(["CEC", "NEC", "Distillation", "Catalyst reuse"])
-plt.savefig(dir_name +'/plots' + data_location + "_cat_fidelity" + ".svg", dpi=1000, format="svg", bbox_inches = 'tight')
+# plt.savefig(dir_name +'/plots' + data_location + "_cat_fidelity" + ".svg", dpi=1000, format="svg", bbox_inches = 'tight')
 # plt.savefig(dir_name +'/plots' + data_location + "_cat_fidelity" + ".pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
 plt.show()
 

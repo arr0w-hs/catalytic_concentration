@@ -89,7 +89,6 @@ def new_state_pauli_x1(a_val, prob):
         qt.ket2dm(qt.tensor(X*Z,I)*phi_tilde)
         )
 
-    #print(bell_st1)
     bell_st = qt.tensor(bell_st1, bell_st1)
 
     """putting ph in front of the four entangled spins"""
@@ -109,21 +108,12 @@ def new_state_pauli_x2(a_val, prob):
         qt.tensor((Z), I)*phi_plus + qt.tensor((X), I)*phi_plus+
         qt.tensor((X*Z), I)*phi_plus)
 
-    # phi_tilde = np.sqrt(a_val)*phi_plus + np.sqrt(1-a_val)*(
-    #     qt.tensor(X, I)*phi_plus)
 
-    #print(phi_tilde.dag()*phi_tilde)
-
-    bell_st1 = qt.ket2dm(phi_tilde)# + (1-prob)/3*(qt.tensor(I,I))
-        # qt.ket2dm(phi_tilde)+
-        # qt.ket2dm(qt.tensor(X,I)*phi_tilde)+
-        # qt.ket2dm(qt.tensor(Z,I)*phi_tilde)+
-        # qt.ket2dm(qt.tensor(X*Z,I)*phi_tilde)
-        # )
+    bell_st1 = qt.ket2dm(phi_tilde)
     II = qt.tensor(I,I)
-    #print(bell_st1)
+
     bell_st = (qt.tensor(bell_st1, II)+qt.tensor(II, bell_st1))
-    # print(bell_st.norm())
+
 
     """putting ph in front of the four entangled spins"""
     bell_st = qt.tensor(qt.ket2dm(zero), bell_st)

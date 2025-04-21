@@ -24,20 +24,9 @@ def self_tensor_prod(vec, num_of_copies):
     return prod_vec
 
 
-# def self_tensor_prod_ver2(vec, num_of_copies):
-#     """func for tensor product of a state with itself version 2"""
-
-#     dim = np.shape(vec)[0]
-#     prod_vec = vec
-#     for i in range(num_of_copies-1):
-#         prod_vec = np.reshape(np.tensordot(prod_vec, vec, 0), dim**(i+2))
-
-#     return prod_vec
-
-
 def ent_mono2(vec, m_begin, m_end):
     """function for calculating entanglement monotone from m_begin onwards"""
-    #print(m_begin, m_end)
+
     ent_monotone = 0
     if m_begin == m_end:
         ent_monotone = vec[m_begin]
@@ -49,8 +38,7 @@ def ent_mono2(vec, m_begin, m_end):
 
 def concat_zeros(out_state, in_state):
     """func for concating zeros in output state"""
-    #print((out_state) )
-    #print(np.shape(in_state)[0])
+
     shape_in_state = np.shape(in_state)[0]
     shape_out_state = np.shape(out_state)[0]
     if np.shape(out_state)[0] > 1:
@@ -65,22 +53,6 @@ def concat_zeros(out_state, in_state):
     
     return out_state
 
-# def prob_of_transformation(op_state, ip_state):
-#     """func for finding the probability of transformation"""
-
-#     if np.shape(ip_state)[0] < np.shape(op_state)[0]:
-#         raise Exception("Incoherent dimensions of states")
-
-#     probab_array = np.zeros(np.shape(ip_state)[0])
-#     for i in range(np.shape(ip_state)[0]):
-#         #print(i)
-#         if ent_mono2(op_state, i, np.shape(ip_state)[0]) != 0:
-#             probab_array[i] = (ent_mono2(ip_state, i, np.shape(ip_state)[0])/
-#                     ent_mono2(op_state, i, np.shape(ip_state)[0]))
-#         else:
-#             probab_array[i] = 1000
-
-#     return np.min(probab_array)
 
 def majorisation_check(final_state, initial_state):
     """func for checking majorisation"""
@@ -139,24 +111,6 @@ def func_for_gamma(opstate, ipstate):
 
     return gamma_f
 
-# def slocc_povm_func_ver0(opstate, ipstate):
-#     """first version of SLOCC POVM function"""
-
-#     if np.shape(ipstate)[0] < np.shape(opstate)[0]:
-#         raise Exception("Incoherent dimensions of states")
-
-#     m1 = []
-#     l_array, r_array = func_for_lr(opstate, ipstate)
-#     gamma_2 = func_for_gamma(opstate, ipstate)
-#     len_r = len(r_array)
-#     for i in range(len_r):
-#         for j in range(l_array[i]-l_array[i+1]):
-#             m1.append(r_array[0]/r_array[i])
-#     m1.reverse()
-#     final_opstate = np.multiply(m1, gamma_2)/r_array[0]
-
-#     return m1, final_opstate, gamma_2, r_array[0]
-
 
 def slocc_povm_func(op_state, in_state):
     """SLOCC POVM function"""
@@ -188,14 +142,3 @@ def slocc_povm_on_state(gamma_new_dm, povm_mat):
     out_dm = out_dm/prob
 
     return out_dm, prob
-
-# def slocc_povm_on_state2(gamma_new_dm, povm_mat):
-#     """gamma new is a density matrix"""
-
-#     out_dm = np.matmul(np.sqrt(povm_mat), gamma_new_dm)
-#     out_dm = np.matmul(out_dm, np.sqrt(povm_mat))
-#     prob = np.trace(out_dm)
-
-#     out_dm = out_dm/prob
-
-#     return out_dm, prob

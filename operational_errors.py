@@ -30,10 +30,7 @@ from base_transform import prepare_carbon_spins
 
 import numpy as np
 import time
-#import rsmf
-#print(dir_name+"/quantum-template.tex")
-# Get formatter specifications from tex file
-#fmt = rsmf.setup(dir_name+"/quantum-template.tex")
+
 plt.rcParams.update({'font.size': 12})
 
 zero = qt.basis(2,0)
@@ -78,7 +75,7 @@ def line_format(perm):
     perm_dim = int(np.log2(np.shape(perm)[0]))
     line_form = [[j for j, elem in enumerate(ele) if elem == 1] for i, ele in enumerate(perm)]
     line_form = [ele[0] for ele in line_form]
-    # print(line_form)
+
     line_form = [ele for i, ele in enumerate(line_form) if i!= ele]
 
 
@@ -86,20 +83,12 @@ def line_format(perm):
         return 0
     else:
         line_form = [np.binary_repr(ele, width=perm_dim) for ele in line_form]
-        # print(perm)
-        print(line_form)
         line_form = list(zip((line_form[0]), (line_form[1])))
-        print(line_form)
 
         hamming_dist = [(int(a)+int(b))%2 for a,b in line_form]
         hamming_dist = sum(hamming_dist)
-        print(hamming_dist)
+
         locations = [a+b for i, (a, b) in enumerate(list(line_form))]
-        print(locations)
-
-
-
-        # print(perm, hamming_dist)
         return hamming_dist
 
 
@@ -195,7 +184,6 @@ def povm_perm_one_round(prepared_dm, locc_povm, locc_perm_list, cat_flag, error_
         unitary = qt.tensor(unitary,I, I)
         if cat_flag:
             unitary = qt.tensor(unitary, I)
-        # print(unitary.shape, "shape after")
 
         psn_aux_dm = unitary*psn_aux_dm*unitary.dag()
         psn_aux_dm = depol_channel(psn_aux_dm, error_rate, unitary)
@@ -203,7 +191,7 @@ def povm_perm_one_round(prepared_dm, locc_povm, locc_perm_list, cat_flag, error_
 
     mea_list = measure_aux(psn_aux_dm, num_qubits, cat_flag)
     locc_perm_list = extend_perm(locc_perm_list, int(num_qubits/2))
-    # print(locc_perm_list)
+
     meas_perm = list(zip(mea_list, locc_perm_list))
     os = 0
 
@@ -215,8 +203,6 @@ def povm_perm_one_round(prepared_dm, locc_povm, locc_perm_list, cat_flag, error_
             os_temp = os_temp.ptrace([0,1,3,4])
 
         perm_len = np.shape(perm)[0]
-        # print(perm)
-        # line_format(perm)
 
         num_qubits = int(np.ceil(np.log2(perm_len)))
 
@@ -264,7 +250,6 @@ def to_be_syn_cat(prepared_dm):
 
     """use function for gamma to find the ideal gamma that is needed"""
     gamma_ideal = func_for_gamma(output_state_array, input_state_array)
-    # print(gamma_ideal)
 
     """use function for locc povms to find the ideal povms to get to gamma"""
     operations_list = locc_operations(gamma_ideal, input_state_array)
@@ -282,7 +267,7 @@ def apply_locc_conversion(locc_oper_list, prepared_dm, cat_flag, error_rate):
     num_comm_rounds = len(locc_oper_list)
     out_state = prepared_dm
     for i in range(num_comm_rounds):
-        #print(i, "i")
+
         povm_list = locc_oper_list[i][0]
         perm_list = locc_oper_list[i][1]
         # out_state = apply_povm_n_perm(povm_circ, permu_circ_list, prepared_dm, cat_flag, error_rate, cnot_error_rate)
@@ -307,7 +292,7 @@ def apply_slocc_conversion(slocc_uni_list, prepared_dm, cat_flag, error_rate):
         unitary = qt.tensor(unitary,I, I)
         if cat_flag:
             unitary = qt.tensor(unitary, I)
-        # print(unitary.shape, "shape after")
+
         psn_aux_dm = unitary*psn_aux_dm*unitary.dag()
         psn_aux_dm = depol_channel(psn_aux_dm, error_rate, unitary)
         psn_aux_dm = depol_channel(psn_aux_dm, error_rate, unitary)
@@ -319,7 +304,6 @@ def apply_slocc_conversion(slocc_uni_list, prepared_dm, cat_flag, error_rate):
     if cat_flag == 1:
         mea_dm0 = mea_dm0.ptrace([0,1,2,4,5,6])
     else:
-        #print(mea_dm0.ptrace([3]), "partial trace")
         mea_dm0 = mea_dm0.ptrace([0,1,3,4])
     mea_dm0 = qt.tensor(I, mea_dm0)
 
@@ -327,9 +311,8 @@ def apply_slocc_conversion(slocc_uni_list, prepared_dm, cat_flag, error_rate):
 
 
 def apply_schmidt_conversion(unitary, in_dm, error_rate):
-    # print(np.shape(unitary))
-    in_dm = unitary*in_dm*unitary.dag()
 
+    in_dm = unitary*in_dm*unitary.dag()
     out_state = depol_channel(in_dm, error_rate, unitary, perm_flag=0)
 
     return out_state
@@ -346,48 +329,24 @@ def oper_err(prepared_state, cat_flag, error_rate):
 
         s_coeff, prepared_state, pure_st,_ = schmidt_decomp_of_dm(prepared_state)
         s_coeff = np.reshape(s_coeff, [4])
-        #print(s_coeff)
 
         """finding and making the catalyst for the pure statestate"""
         output_states = [0.5, 0.5]
         carbon_st, psnc_dm, psnc_st, cat_array, _ = prepare_carbon_spins(
             output_states, s_coeff, prepared_state, pure_st)
-        #print(cat_array)
-        # print(psnc_st)
         psnc_st, basis_mat, ss_cat, u_mat, v_mat = basis2schmidt(psnc_st)
 
         output_state_qobj = qt.tensor(carbon_st, output_state_qobj)
         output_state_qobj = qt.ket2dm(output_state_qobj.permute([2,3,0,4,5,1,6]))
-        # psnc_dm = basis_mat_cat * psnc_dm * basis_mat_cat.dag()
-        # print(psnc_st, "osnc state oper")
-        # psnc_st, basis_mat_cat, ss_cat, u_mat, v_mat = basis2schmidt(psnc_st)
-        # psnc_dm = basis_mat_cat * psnc_dm * basis_mat_cat.dag()
-        # psnc_dm = basis_mat * psnc_dm * basis_mat.dag()
-        # psnc_dm1 = (psnc_dm.tidyup().full())
-        # print(psnc_dm1)
-
-        # for elem in basis_mat:
-        #     a = [j for j, ele in enumerate(elem) if ele == 1]
-        #     # print(a)
-
         locc_op, slocc_uni, _ = to_be_syn_cat(prepared_state)
         prepared_state = psnc_dm
     else:
         locc_op, slocc_uni, basis_mat = to_be_syn_nc(prepared_state)
 
     final_state_sd = apply_schmidt_conversion(basis_mat, prepared_state, error_rate)
-
-    # print(qt.fidelity(final_state_sd, psnc_dm), "hghghg")
     gamma_got = apply_locc_conversion(locc_op, final_state_sd, cat_flag, error_rate)
-    # print(gamma_got)
-    # print("locc done")
-
-
-
     output_state, prob = apply_slocc_conversion(slocc_uni, gamma_got, cat_flag, error_rate)
-    # print(qt.fidelity(gamma_got, output_state))
     fid = qt.fidelity(output_state, output_state_qobj)
-    # print(fid, prob)
 
     return fid, prob, output_state, psnc_dm
 
@@ -425,13 +384,6 @@ if __name__ == "__main__":
     fid_dist, prob, ops = distillation(final_state, 0)
     print(fid_dist, prob, "distillation")
     print(ops)
-    # fid_nocat, prob_nocat, post_locc_state_nocat = oper_err(list_circ_nc, final_state, 0, 0, 0)
-    # print(fid_nocat, prob_nocat, "slocc")
-
-    # fid_cat, prob_cat, post_locc_state_cat = oper_err(cat, final_state, 1, 0, 0)
-    # print(fid_cat, prob_cat, "cat_slocc")
-
-    # print(hh)
 
     x = []
     fid_list = []
