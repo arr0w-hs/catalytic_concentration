@@ -116,7 +116,7 @@ def one_round_povm_func(op_state, ip_state):#, num_qubits):
 
     returns: list of povm and output state density matrix
     """
-    #print(len(ip_state))
+
     #dummy_inital_state = [1]*2**num_qubits
     #ip_state = concat_zeros(ip_state, dummy_inital_state)
     op_state = concat_zeros(op_state, ip_state)
@@ -177,7 +177,7 @@ def unitary_on_auxiliary(povm_set):
 
 
         unitary_temp = np.zeros((2,2))
-        print(np.sqrt(povm_ele0[i,i]), np.sqrt(povm_ele1[i,i]))
+        # print(np.sqrt(povm_ele0[i,i]), np.sqrt(povm_ele1[i,i]))
         unitary_temp[0,0] = np.sqrt(povm_ele0[i,i])#a
         unitary_temp[1,0] = np.sqrt(povm_ele1[i,i])#c
         unitary_temp[0,1] = 1*np.sqrt(povm_ele1[i,i])#b
@@ -226,12 +226,9 @@ def one_round_unitary_list(num_qubits, unitary_list):
             unitary_final += unitary_temp
         I = qt.qeye(2)
         uni_list.append(unitary_final)
-        # unitary_final = qt.tensor(I,I,I,I)
-        # for ele in uni_list:
-        #     unitary_final *= ele
 
 
-    print(len(uni_list))
+    # print(len(uni_list))
     # print(uni_list)
 
     return uni_list
@@ -291,7 +288,7 @@ def locc_operations(final_state, input_state):
     for k in range(number_of_communication_rounds):
         one_round_operation = []
         inp_state = out_state_list[k]
-        print(inp_state, "in state")
+        # print(inp_state, "in state")
         out_state = out_state_list[k+1]
         #print(out_state, "out state")
         #print(" ")
@@ -302,16 +299,19 @@ def locc_operations(final_state, input_state):
         output = one_round_povm_func(out_state, inp_state)#, num_qubits)
         povms = output[0]
         permutations = output[1]
+        # for ele in permutations:
+            # print(ele)
         # for ele in povms:
         #     print(np.shape(ele), "ele")
 
-        #print(permutations)
+        # print(permutations)
 
         """we continue in case povms have only one element that is identity"""
         if len(povms) == 1:
+            # print(povms[0])
             #print(np.shape(povms[0]))
-            print(np.array_equal(povms[0], qt.qeye(np.shape(povms[0])[0]))
-                  ,  "the povm element is identity")
+            # print(np.array_equiv(povms[0], qt.qeye(np.shape(povms[0])[0]))
+                  # ,  "the povm element is identity")
             #print(povms[0])
            # print(permutations)
             #one_round_operation.append(povms)
@@ -344,7 +344,7 @@ def locc_operations(final_state, input_state):
     return operation_list
 
 
-def slocc_unitary(slocc_povm):
+def slocc_operations(slocc_povm):
     """function for giving out the slocc unitary"""
     num_qubits = int(np.ceil(np.log2(np.shape(slocc_povm[0])[0])))
     #print(len(slocc_povm))
@@ -352,11 +352,11 @@ def slocc_unitary(slocc_povm):
 
     """we get the final unitary for initializing data+auxiliary qubits
     for each round of communication separately"""
-    slocc_uni = one_round_unitary(num_qubits, ut_list)
+    slocc_list = one_round_unitary_list(num_qubits, ut_list)
 
-    #print(slocc_unitary*slocc_unitary.dag())
+    #print(slocc_operations*slocc_operations.dag())
 
-    return slocc_uni
+    return slocc_list
 
 
 if __name__ == "__main__":

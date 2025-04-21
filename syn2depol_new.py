@@ -30,7 +30,7 @@ from base_transform import  pre_conversion_process, schmidt_decomp_of_dm
 from base_slocc import concat_zeros, func_for_gamma, slocc_povm_func
 #from base_siv_state_prep import basis2schmidt
 from qutip.qip.operations import cnot
-from base_locc_alt import locc_operations, slocc_unitary
+from base_locc_alt import locc_operations, slocc_operations
 from bqskit import compile
 from base_depol_channels import new_state_pauli_x1#new_state_depol, new_state_pauli_z,
 
@@ -97,35 +97,13 @@ def basis2schmidt(psn_st):
 
 def compile_unitary(in_unitary):
     """compiling the unitary into a circut"""
-    #print(in_unitary*in_unitary.dag())
-    # in_unitary = in_unitary.full()
+    # print(in_unitary*in_unitary.dag())
+    in_unitary = in_unitary.full()
     # print(np.shape(in_unitary))
     # t1=  time.time()
-    # syn_circuit = compile(in_unitary, max_synthesis_size = int(4))
-    # print("compiled", time.time()-t1, "seconds")
+    syn_circuit = compile(in_unitary, max_synthesis_size = int(4))
 
-
-    circuit = Circuit.from_unitary(in_unitary.full())
-    
-    # We now define our synthesis workflow utilizing the QFAST algorithm.
-    workflow = [
-        QFASTDecompositionPass(),
-        ForEachBlockPass([
-            LEAPSynthesisPass(),  # LEAP performs native gate instantiation
-            ScanningGateRemovalPass(),  # Gate removal optimizing gate counts
-        ]),
-        UnfoldPass(),
-    ]
-    
-    # Finally let's create create the compiler and execute the CompilationTask.
-    with Compiler() as compiler:
-        compiled_circuit = compiler.compile(circuit, workflow)
-        print(compiled_circuit.gate_counts)
-    
-    len_cirq = (len(compiled_circuit))
-    #syn_circuit.compress()
-
-    return compiled_circuit
+    return syn_circuit
 
 def extend_perm(perm_list, num_qubits):
     """function for extending the dimensions of permutation unitaries
@@ -185,10 +163,10 @@ def unitary2circ(list_unitaries, cat_flag):
     metadata_list = []
     # print(num_rounds)
 
-    u_circ = 0#compile_unitary(list_unitaries[2])
-    v_circ = 0#compile_unitary(list_unitaries[3])
+    u_circ = compile_unitary(list_unitaries[2])
+    v_circ = compile_unitary(list_unitaries[3])
 
-    slocc_uni = slocc_unitary(list_unitaries[1])
+    slocc_uni = slocc_operations(list_unitaries[1])
     # print(np.real(slocc_uni.full()))
     slocc_circ = 0#compile_unitary(qt.Qobj(slocc_uni))
 

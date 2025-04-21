@@ -67,7 +67,7 @@ def schmidt_decomp_of_dm(psn_dm):
     schmidt_coeff = np.real((sc_mat.full())**2)
     schmidt_coeff = np.reshape(schmidt_coeff, [len(schmidt_coeff)])
 
-    return schmidt_coeff, psn_dm, psn_st, [u_mat, v_mat]
+    return schmidt_coeff, psn_dm, psn_st, basis_mat
 
 
 def slocc_povm_on_dm_qobj(gamma_new_dm, povm_mat):
@@ -174,13 +174,13 @@ def prepare_carbon_spins(out_state, input_schmidt_coeff, psn_dm, pure_state):
     #print(psn_dm)#, "pure-state")
 
     """putting the qt.tensor product in the form |ph>|sp_a>|nu_a>|c>_a|sp_b>|nu_b>|c_b>"""
-    pure_state_cat = pure_state.permute([2,3,4,0,5,6,1])
-    #print(pure_state_cat)
+    pure_state = pure_state.permute([2,3,4,0,5,6,1])
+    #print(pure_state)
     psnc_dm = psnc_dm.permute([2,3,4,0,5,6,1])
     #print(cat_final, "cat_final")
     #print(psnc_dm)
 
-    return carbon_st, psnc_dm, pure_state_cat, cat_final, gain
+    return carbon_st, psnc_dm, pure_state, cat_final, gain
 
 
 def cat_st2cat_array(catalyst_st):
@@ -199,7 +199,7 @@ def pre_conversion_process(prepared_dm):
 
     s_coeff, prepared_dm, pure_st,_ = schmidt_decomp_of_dm(prepared_dm)
     s_coeff = np.reshape(s_coeff, [4])
-    #print(s_coeff)
+    # print(s_coeff)
 
     """finding and making the catalyst for the pure statestate"""
     output_states = [0.5, 0.5]
@@ -209,6 +209,7 @@ def pre_conversion_process(prepared_dm):
 
     psnc_st, basis_mat_cat, ss_cat, u_mat, v_mat = basis2schmidt(psnc_st)
     psnc_dm = basis_mat_cat * psnc_dm * basis_mat_cat.dag()
+    # print(basis_mat_cat.shape)
     #print(psnc_st)
     #print(psnc_dm)
     input_state_array = np.reshape(np.real((ss_cat.full())**2), [8])
@@ -220,17 +221,18 @@ def pre_conversion_process(prepared_dm):
     output_state_qobj = qt.tensor(carbon_st, output_state_qobj)
     output_state_qobj = qt.ket2dm(output_state_qobj.permute([2,3,0,4,5,1,6]))
 
-    return output_state_qobj, psnc_dm, carbon_st, input_state_array, output_state_array, [u_mat, v_mat]
+    return output_state_qobj, psnc_dm, carbon_st, input_state_array, output_state_array, basis_mat_cat
 
 def catalytic_conversion(prepared_dm):
     """function for taking in two prepared bell states and converts them
     by (1) finding the optimal catalyst, (2) finding the povms, and
     (3) applys the povms"""
     #print(prepared_dm)
-    output_state_qobj, psnc_dm, carbon_st, input_state_array, output_state_array, _ = pre_conversion_process(prepared_dm)
-
+    output_state_qobj, psnc_dm, carbon_st, input_state_array, output_state_array, bassis_mat = pre_conversion_process(prepared_dm)
+    statewa = psnc_dm
     """use function for gamma to find the ideal gamma that is needed"""
     gamma_ideal = func_for_gamma(output_state_array, input_state_array)
+    # print(gamma_ideal)
 
     assert np.sum(gamma_ideal) != 0
     gamma_ideal = gamma_ideal/np.sum(gamma_ideal)
@@ -249,6 +251,7 @@ def catalytic_conversion(prepared_dm):
     """apply those povm on the density matrix"""
     gamma_density_mat, prob_obtained_list = locc_povm_on_dm_qobj(psnc_dm,
                                                                  povm_out_list, perm_out_list)
+    # print(gamma_density_mat)
 
     assert len(prob_obtained_list) != 0
 
@@ -261,7 +264,7 @@ def catalytic_conversion(prepared_dm):
 
     fid = qt.fidelity(output_state_qobj, output_density_mat)
 
-    return fid, np.real(probab), output_density_mat, carbon_st
+    return fid, np.real(probab), output_density_mat, carbon_st, statewa
 
 
 def non_catalytic_conversion(prepared_dm):

@@ -52,6 +52,7 @@ prob_in_state_list = []
 cat_fidelity = []
 gain_list = []
 cat_state = []
+cat_fid_reuse = []
 x = []
 kap = []
 
@@ -81,19 +82,19 @@ fip_cat_reuse_list = []
 cat_fid = []
 eigen_val_list = []
 
-n = 10
+n = 20
 """preparing the bell states"""
 
 for i in range(n):
 
     print(i)
-    
-    prob_in_state = 0.9999-0.20*i/n#0.95#
-    alpha = 0.9#0.9999 - i/n*0.21
+
+    prob_in_state = 0.95#0.9999-0.20*i/n #0.95#
+    alpha = 0.9999 - i/n*0.20
     #print(prob_in_state, "prob_in")
     p = prob_in_state
 
-    fid_lower_bound = ((4*p-1)/3)**2 + 1/4*((1-p)/3)**2 + 5*(4*p-1)*(1-p)/9
+    # fid_lower_bound = ((4*p-1)/3)**2 + 1/4*((1-p)/3)**2 + 5*(4*p-1)*(1-p)/9
     #print(prob_in_state)
     #final_state = r_state(alpha, prob_in_state)
     #final_state = new_state_depol(alpha, prob_in_state)
@@ -113,7 +114,7 @@ for i in range(n):
     # print(final_state)
     #
     fid_cat, prob_cat, post_locc_state, carbon_cat_st = catalytic_conversion(final_state)
-    # print(fid_cat, prob_cat)
+    # print(fid_cat, prob_cat, "fid cat ")
     fid_nocat, prob_nocat, post_locc_state_nocat, _ = non_catalytic_conversion(final_state)#, prob_in_state, alpha)
     fid_dist, prob_dist, _ = distillation(final_state, 0)
     # fid_dames, prob_dames = dejmps(final_state, 0)
@@ -125,9 +126,12 @@ for i in range(n):
     #print(post_locc_state.ptrace([2,5]))
     #print(post_locc_state.ptrace([3,6]), "post locc qobj")
     fid_reuse, prob_reuse, out_state_reuse, flag = catalytic_conversion_reuse(final_state, cat_post)
+    cat_post_reuse = out_state_reuse.ptrace([2,5])
     #print(fid_cat, "fid cat")
     #print(fid_reuse, "fid reuse")
     cat_fid.append(qt.fidelity(carbon_cat_st, cat_post))
+    cat_fid_reuse.append(qt.fidelity(cat_post_reuse, carbon_cat_st))
+
     #fid_cat_list.append(1-fid_cat)
 
     # a = 1/12*(11*p**2 + 2*p - 1)
@@ -249,7 +253,8 @@ data_dict = {
     "prob_nocat_list": prob_nocat_list,
     "prob_dist_list": prob_dist_list,
     "prob_cat_reuse_list": prob_cat_reuse_list,
-    
+    "cat_fid_reuse": cat_fid_reuse,
+
     }
 ts = pd.Timestamp.today(tz = 'Europe/Stockholm')
 date_str = str(ts.date())

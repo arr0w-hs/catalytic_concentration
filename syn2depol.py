@@ -30,14 +30,20 @@ from base_transform import  pre_conversion_process, schmidt_decomp_of_dm
 from base_slocc import concat_zeros, func_for_gamma, slocc_povm_func
 #from base_siv_state_prep import basis2schmidt
 from qutip.qip.operations import cnot
-from base_locc_alt import locc_operations, slocc_unitary
+from qutip import gates
+from base_locc_alt import locc_operations, slocc_operations
 from bqskit import compile
 from base_depol_channels import new_state_pauli_x1#new_state_depol, new_state_pauli_z,
 
-from bqskit.compiler import Compiler
+from bqskit.compiler import Compiler, GateSet, CompilationTask
 from bqskit.ir.circuit import Circuit
 from bqskit.passes import ForEachBlockPass, LEAPSynthesisPass
-from bqskit.passes import QFASTDecompositionPass, ScanningGateRemovalPass, UnfoldPass
+from bqskit.passes import QFASTDecompositionPass, ScanningGateRemovalPass, UnfoldPass, QSearchSynthesisPass
+
+from bqskit.passes import SimpleLayerGenerator, WideLayerGenerator
+from bqskit.ir.gates import ISwapGate, PauliGate, CCPGate, RC3XGate
+from bqskit.ir.gates import RXXGate, RYYGate, RZZGate, U3Gate, CNOTGate
+from bqskit.passes.search import LayerGenerator
 
 parser = argparse.ArgumentParser(description="round number")
 parser.add_argument("--i", type=int, help="index of round list")
@@ -70,6 +76,51 @@ else:
 
 round_number = 5
 
+# class CustomLayerGenerator(LayerGenerator):
+    
+#     def gen_initial_layer(self, target, data):
+#         """
+#         Here we will generate the first circuit that seeds the search space.
+        
+#         By default, the SimpleLayerGenerator places single-qudit gates
+#         on each qudit. Here let's do something a little more crazy
+#         to demonstrate the potential.
+#         """
+        
+#         init_circuit = Circuit(target.num_qudits, target.radixes)
+        
+#         # Place RXX Gates on consective pairs of qudits
+#         for i in range(init_circuit.num_qudits - 1):
+#             init_circuit.append_gate(RXXGate(), (i, i+1))
+        
+#         return init_circuit
+    
+#     def gen_successors(self, circuit, data):
+#         """
+#         During the search, this will be called when expanding a node.
+        
+#         By default, the SimpleLayerGenerator produces new circuits with
+#         one more block of gates on each valid edge. Again, let's be
+#         a little crazy here too.
+#         """
+        
+#         base_successor = circuit.copy()
+        
+#         # Apply a column of U3Gates
+#         for i in range(base_successor.num_qudits):
+#             base_successor.append_gate(U3Gate(), i)
+        
+#         successors = []
+        
+#         # Create 3 successors
+#         # Each one has a line of a specific type of gate.
+#         for gate in [CCPGate()]:
+#             successor = base_successor.copy()
+#             for i in range(base_successor.num_qudits - 1):
+#                 successor.append_gate(gate, (i, i+1))
+#             successors.append(successor)
+
+#         return successors
 
 def basis2schmidt(psn_st):
     psn_dims = psn_st.dims
@@ -101,29 +152,44 @@ def compile_unitary(in_unitary):
     # in_unitary = in_unitary.full()
     # print(np.shape(in_unitary))
     # t1=  time.time()
-    # syn_circuit = compile(in_unitary, max_synthesis_size = int(4))
+    # compiled_circuit = compile(in_unitary, max_synthesis_size = int(4))
     # print("compiled", time.time()-t1, "seconds")
 
 
-    circuit = Circuit.from_unitary(in_unitary.full())
+    circuit = Circuit.from_unitary(in_unitary)#.full())
     
-    # We now define our synthesis workflow utilizing the QFAST algorithm.
-    workflow = [
-        QFASTDecompositionPass(),
-        ForEachBlockPass([
-            LEAPSynthesisPass(),  # LEAP performs native gate instantiation
-            ScanningGateRemovalPass(),  # Gate removal optimizing gate counts
-        ]),
-        UnfoldPass(),
-    ]
+    # # We now define our synthesis workflow utilizing the QFAST algorithm.
+    # workflow = [
+    #     QFASTDecompositionPass(),
+    #     ForEachBlockPass([
+    #         LEAPSynthesisPass(),  # LEAP performs native gate instantiation
+    #         ScanningGateRemovalPass(),  # Gate removal optimizing gate counts
+    #     ]),
+    #     UnfoldPass(),
+    # ]
     
-    # Finally let's create create the compiler and execute the CompilationTask.
-    with Compiler() as compiler:
-        compiled_circuit = compiler.compile(circuit, workflow)
-        print(compiled_circuit.gate_counts)
+    # # Finally let's create create the compiler and execute the CompilationTask.
+    # with Compiler() as compiler:
+    #     compiled_circuit = compiler.compile(circuit, workflow)
+    #     print(compiled_circuit.gate_counts)
     
-    len_cirq = (len(compiled_circuit))
+    # len_cirq = (len(compiled_circuit))
     #syn_circuit.compress()
+    # layer_gen = WideLayerGenerator(multi_qudit_gates=CCXGate(), single_qudit_gate=U3Gate(1))
+    layer_gen = SimpleLayerGenerator(two_qudit_gate=CNOTGate(), single_qudit_gate_1=U3Gate())
+
+    configured_qsearch_pass = QSearchSynthesisPass(layer_generator=layer_gen)
+    
+    # Create and execute a compilation task
+    with Compiler() as compiler:
+        # task = CompilationTask()
+        compiled_circuit = compiler.compile(circuit, [configured_qsearch_pass])
+    
+    for gate in compiled_circuit.gate_set:
+        print(f"{gate} Count:", compiled_circuit.count(gate))
+
+    # print(GateSet.multi_qudit_gates())
+    print(compiled_circuit.gate_counts)
 
     return compiled_circuit
 
@@ -166,7 +232,7 @@ def extend_perm(perm_list, num_qubits):
 
         extended_perm_mat = qt.Qobj(extended_perm_mat, dims = initial_dims)
         extended_perm_list.append(extended_perm_mat)
-        # print(extended_perm_mat)
+        print(extended_perm_mat)
 
     return extended_perm_list
 
@@ -183,19 +249,22 @@ def unitary2circ(list_unitaries, cat_flag):
     operations_out = []
     num_rounds = len(operations)
     metadata_list = []
-    # print(num_rounds)
 
-    u_circ = 0#compile_unitary(list_unitaries[2])
-    v_circ = 0#compile_unitary(list_unitaries[3])
+    u_circ = compile_unitary(list_unitaries[2])
+    v_circ = compile_unitary(list_unitaries[3])
+    # print(u_circ)
+    # print(v_circ)
+    # print(u_circ.gate_counts)
+    # print(v_circ.gate_counts)
 
-    slocc_uni = slocc_unitary(list_unitaries[1])
+    slocc_uni = slocc_operations(list_unitaries[1])
     # print(np.real(slocc_uni.full()))
     slocc_circ = 0#compile_unitary(qt.Qobj(slocc_uni))
 
     for i, ele in enumerate(operations):
-
-        if i != round_number:
-            continue
+        # continue
+        # if i != round_number:
+            # continue
 
 
         povm_circ_list = []
@@ -439,6 +508,8 @@ def to_be_syn_cat(prepared_dm):
     """use function for slocc povms to find the ideal povms to get to final state"""
     slocc_povm = slocc_povm_func(output_state_array, input_state_array)
 
+    # print(uv[0])
+    # print(uv[1])
 
 
     return operations, slocc_povm, uv[0], uv[1]
@@ -456,8 +527,47 @@ if __name__ == "__main__":
     a = 0.9
     p = 0.95
     final_state = new_state_pauli_x1(a, p)
+    # in_uni = np.zeros((4,4))
+    # in_uni[0,1] =1
+    # in_uni[1,3] =1
+    # in_uni[2,0] =1
+    # in_uni[3,2] =1
+    # print(in_uni)
+
+    # in_uni = qt.Qobj(in_uni, dims = [[2,2],[2,2]])
+    # print(in_uni)
+    # swap = qt.gates.swap()
+    # A = (swap*qt.tensor(I,X))
+    # print(A)
+    # O = qt.ket2dm(one)
+    # Z = qt.ket2dm(zero)
+    # B = qt.tensor(Z, Z, X)+qt.tensor(O,O,X)
+    # print(B)
+    # C = qt.tensor(O,A)+qt.tensor(Z, A)
+    # print(C)
+
+    # a = np.zeros((8,8))
+    # a[0,1] =1
+    # a[1,0] =1
+    # a[2,3] =1
+    # a[3,5] =1
+    # a[4,2] =1
+    # a[5,4] =1
+    # a[6,7] =1
+    # a[7,6] =1
+    # a = qt.Qobj(a, dims = [[2,2,2],[2,2,2]])
+    # a = (a*qt.tensor(I,I,X))
+    # print(a*qt.tensor(I,swap)*qt.tensor(I,X,I))
+    # print(a)
 
 
+
+
+
+
+    # cir = compile_unitary(a.full())
+    # for ele in cir:
+    #     print(ele)
 
     #print(final_state.shape, "final state shape")
     #catalytic_conversion(final_state)
@@ -467,7 +577,7 @@ if __name__ == "__main__":
     # list_unit = to_be_syn_nc(final_state)
     list_unit = to_be_syn_cat(final_state)
     #print(list_unit[1], list_unit[2], list_unit[3])
-    list_circs = unitary2circ(list_unit, 1)
+    # list_circs = unitary2circ(list_unit, 1)
     # print(list_circs)
     #povm_uni = list_unit[0][4][0]
     #print(povm_uni)
@@ -527,15 +637,15 @@ if __name__ == "__main__":
     #print(list_circs)
 
 
-    data_dict = {
-        "list_unitary": list_unit,
-        "list_circs": list_circs,
-        "a": a,
-        "p": p,
-        }
+    # data_dict = {
+    #     "list_unitary": list_unit,
+    #     "list_circs": list_circs,
+    #     "a": a,
+    #     "p": p,
+    #     }
 
-    with open(data_directory+ time_str +'_' + str(round_number) + '.pkl', 'wb') as f:  # open a text file
-        pickle.dump(data_dict, f)
+    # with open(data_directory+ time_str +'_' + str(round_number) + '.pkl', 'wb') as f:  # open a text file
+    #     pickle.dump(data_dict, f)
 
 
 
