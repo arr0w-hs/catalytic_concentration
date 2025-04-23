@@ -61,17 +61,17 @@ ts = pd.Timestamp.today(tz = 'Europe/Stockholm')
 date_str = str(ts.date())
 time_str = ts.time()
 time_str = str(time_str.hour)+ str(time_str.minute) + str(time_str.second)
-print(time_str)
+# print(time_str)
 
-#data_directory = os.path.join(dir_name+"/test_circuits", date_str+"/")
-data_directory = os.path.join(dir_name+"/test_circuits", date_str+"_cat_disti_comparison_nc/")
-#plots_directory = os.path.join(dir_name+"/plots", date_str+"_cat_disti_comparison/")
+# #data_directory = os.path.join(dir_name+"/test_circuits", date_str+"/")
+# data_directory = os.path.join(dir_name+"/test_circuits", date_str+"_cat_disti_comparison_nc/")
+# #plots_directory = os.path.join(dir_name+"/plots", date_str+"_cat_disti_comparison/")
 
-date_folder = Path(data_directory)
-if date_folder.exists():
-    print("date folder exists")
-else:
-    os.mkdir(data_directory)
+# date_folder = Path(data_directory)
+# if date_folder.exists():
+#     print("date folder exists")
+# else:
+#     os.mkdir(data_directory)
 
 round_number = 5
 
