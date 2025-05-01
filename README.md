@@ -4,5 +4,5 @@ We also find the effects of operational errors on the catalytic EC protocols.
 
 ## How to use:
 Files with all the functions are labelled with a "base_" in the beginning. these files have all the functions required for finding operations for EC, creating states, applying EC conversions on the states.  
-File depol_cmoparison.py can be run to plot the effect of state preparation errors.   
+File depol_comparison.py can be run to plot the effect of state preparation errors. This file will create folders for saving the generated data and plots.  
 Running the file oper_comparison.py will plot the effect of operational errors on the protocols.  
