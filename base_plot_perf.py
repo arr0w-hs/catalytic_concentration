@@ -58,9 +58,9 @@ def plot_perf(time_str, date_str, saving):
         
         plt.figure()
         plt.grid()
-        plt.plot(prob_in_state_list, data_dict_loaded["prob_cat_list"][xmin:xmax],'o-', label = 'CEC')
-        plt.plot(prob_in_state_list, data_dict_loaded["prob_nocat_list"][xmin:xmax],'.-', label = 'NEC')
-        plt.plot(prob_in_state_list, data_dict_loaded["prob_dist_list"][xmin:xmax], 'v-', label = 'Distillation')
+        plt.plot(prob_in_state_list, data_dict_loaded["prob_cat_list"][xmin:xmax],'o-', label = 'CEC')#, s = 5)#, c = "red")#, "ob", alpha = 0.3)
+        plt.plot(prob_in_state_list, data_dict_loaded["prob_nocat_list"][xmin:xmax],'.-', label = 'NEC')#, s = 5)#, c = "blue")
+        plt.plot(prob_in_state_list, data_dict_loaded["prob_dist_list"][xmin:xmax], 'v-', label = 'Distillation')#, s = 5)#, c = "limegreen")
         plt.plot(prob_in_state_list, data_dict_loaded["prob_cat_reuse_list"][xmin:xmax], 'x-', label = 'Catalyst reuse')
         
         plt.ylabel('Probability of success', fontsize=fs)
@@ -70,8 +70,7 @@ def plot_perf(time_str, date_str, saving):
         plt.legend(fontsize = fs,
                    handlelength=1.3, handleheight=0.5, labelspacing = 0.15)
         if saving:
-            # plt.savefig(str(plot_folder)+ "/"+time_str+"_probability" + ".svg", dpi=1000, format="svg", bbox_inches = 'tight')
-            plt.savefig(str(plot_folder) + "/"+time_str+"_probability_" +error_name+ ".pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
+            plt.savefig(str(plot_folder) + "/"+time_str+"_probability_" + error_name + ".pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
 
         
         fid_nocat_list = data_dict_loaded["fid_nocat_list"][xmin:xmax]
@@ -80,10 +79,10 @@ def plot_perf(time_str, date_str, saving):
         fid_cat_reuse_list = data_dict_loaded["fid_cat_reuse_list"][xmin:xmax]
         plt.figure()
         plt.grid()
-        plt.plot(prob_in_state_list, fid_cat_list, 'o-', label = 'CEC')
-        plt.plot(prob_in_state_list, fid_nocat_list, '.-', label = 'NEC')
-        plt.plot(prob_in_state_list, fid_dist_list, 'v-', label = 'Distillation')
-        plt.plot(prob_in_state_list, fid_cat_reuse_list,'x-', label = 'Catalyst reuse')
+        plt.plot(prob_in_state_list, fid_cat_list, 'o-', label = 'CEC')#, s = 5)#, c = "red")
+        plt.plot(prob_in_state_list, fid_nocat_list, '.-', label = 'NEC')#, s = 5)#, c = "blue")
+        plt.plot(prob_in_state_list, fid_dist_list, 'v-', label = 'Distillation')#, s = 5)#, c = "limegreen")
+        plt.plot(prob_in_state_list, fid_cat_reuse_list,'x-', label = 'Catalyst reuse')#, s = 5)#, c = "orange")
         
         plt.ylabel('Infidelity of final state', fontsize=fs)
         plt.xlabel(error_name, fontsize=fs)
@@ -92,8 +91,7 @@ def plot_perf(time_str, date_str, saving):
         plt.legend(fontsize = fs,
                    handlelength=1.3, handleheight=0.5, labelspacing = 0.15)
         if saving:
-            # plt.savefig(str(plot_folder)+ "/"+time_str+"_fidelity" + ".svg", dpi=1000, format="svg", bbox_inches = 'tight')
-            plt.savefig(str(plot_folder) + "/"+time_str+"_fidelity_" +error_name + ".pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
+            plt.savefig(str(plot_folder) + "/"+time_str+"_fidelity_" + error_name + ".pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
         
         
         
@@ -114,8 +112,7 @@ def plot_perf(time_str, date_str, saving):
         plt.legend(fontsize = fs,
                    handlelength=1.3, handleheight=0.5, labelspacing = 0.15)
         if saving:
-            # plt.savefig(str(plot_folder) + "/"+time_str+ "_cat_fidelity" + ".svg", dpi=1000, format="svg", bbox_inches = 'tight')
-            plt.savefig(str(plot_folder) + "/"+time_str+ "_cat_fidelity_" +error_name+ ".pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
+            plt.savefig(str(plot_folder) + "/"+time_str+ "_cat_fidelity_" + error_name + ".pdf", dpi=1000, format="pdf", bbox_inches = 'tight')
         plt.show()
 
 

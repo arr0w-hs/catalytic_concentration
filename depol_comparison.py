@@ -23,9 +23,9 @@ from base_depol_channels import  new_state_pauli_x1
 import numpy as np
 import pandas as pd
 plt.rcParams.update({'font.size': 12})
-from plot_perf import plot_perf
+from base_plot_perf import plot_perf
 
-def performance_comparison(param_list, coherent_err = True):
+def perf_comparison(param_list, coherent_err = True):
     """
         for comparing the performance of our protocols in presence of coherent 
         and depolarising errors
@@ -163,8 +163,8 @@ def performance_comparison(param_list, coherent_err = True):
     return data_dict
 
 
-def perf_comparison(a_max, p_max, a_const, p_const, num_points = 20,
-                    a_min = 0, p_min = 0, save_data=True, save_plot=False):
+def performance_comparison(a_max, p_max, a_const, p_const, num_points = 20,
+                    a_min = 0, p_min = 0, save_plot=False):
     """
         for comparing the performance of our protocols in presence of coherent 
         and depolarising errors. this code creates two folders: 
@@ -185,8 +185,7 @@ def perf_comparison(a_max, p_max, a_const, p_const, num_points = 20,
                  depol error is varied
                  
         num_points: is the number of points in the plot
-        save_data: saves the data "data_dict" in a form of a pickle file unless
-                   set to False
+        save_plot: saves the plots unless set to False
 
         Returns
         -------
@@ -203,25 +202,32 @@ def perf_comparison(a_max, p_max, a_const, p_const, num_points = 20,
     date_str = str(ts.date())
     time_str = ts.time()
     time_str = str(time_str.hour)+ str(time_str.minute) + str(time_str.second)
-
     print("time string = ", time_str)
+
     data_folder = Path(os.path.join(dir_name,"data"))
     plot_folder = Path(os.path.join(dir_name,"plots"))
-    if not (data_folder).exists() and save_data:
+    if not (data_folder).exists():
         os.mkdir(data_folder)
+
 
     data_directory = os.path.join(data_folder, date_str)
     plots_directory = os.path.join(plot_folder, date_str)
+
 
     date_folder = Path(data_directory)
 
     if not date_folder.exists():
         os.mkdir(data_directory)
 
+    # plot_folder = Path(plots_directory)
+    # if not plot_folder.exists():
+    #     os.mkdir(plots_directory)
+
+
     param_list = [a_max, p_max, a_const, p_const, num_points, a_min, p_min]
     data_dict = {}
-    data_dict["coherent"] = performance_comparison(param_list, coherent_err = True)
-    data_dict["depol"] = performance_comparison(param_list, coherent_err = False)
+    data_dict["coherent"] = perf_comparison(param_list, coherent_err = True)
+    data_dict["depol"] = perf_comparison(param_list, coherent_err = False)
 
     with open(data_directory+"/" +time_str +'.pkl', 'wb') as f:
         pickle.dump(data_dict, f)
@@ -232,4 +238,4 @@ def perf_comparison(a_max, p_max, a_const, p_const, num_points = 20,
 
 if __name__=="__main__":
 
-    perf_comparison(0.19, 0.19, 0.9, 0.95, num_points = 19, a_min = 0.0001, p_min = 0.0001, save_plot=True)
+    performance_comparison(0.19, 0.19, 0.9, 0.95, num_points = 19, a_min = 0.0001, p_min = 0.0001, save_plot=True)

@@ -11,8 +11,8 @@ import os
 
 import numpy as np
 import qutip as qt
+from qutip.qip.operations import expand_operator
 
-from syn2depol import depol_channel
 sys.path.append(os.path.dirname(__file__))
 
 zero = qt.basis(2,0)
@@ -29,6 +29,32 @@ plus = qt.ket2dm((qt.basis(2, 0)+qt.basis(2, 1)).unit())
 minus = qt.ket2dm((qt.basis(2, 0)-qt.basis(2, 1)).unit())
 
 S = ketbra0 + 1j*ketbra1
+
+def depol_channel(rho_in, err_prob, qubit_loc, num_qubits):
+    """
+    function for depol channel at one qubit
+
+    inputs:
+        input dm
+        errors rates
+        location of the qubit
+        total num of qubits at alice's side (including ancilla)
+    returns:
+        output dm with depol channel on one qubit
+    """
+
+    gates = [X, Z]
+    for i, ele in enumerate(gates):
+        #gates[i] = gate_expand_1toN(ele, num_qubits, qubit_loc)
+        #print(qubit_loc)
+        gates[i] = expand_operator(ele, dims=[2]*num_qubits, targets=[qubit_loc])
+        #print(gates[i])
+
+    rho_out = (1-err_prob)*rho_in + err_prob/3*(gates[0]*rho_in*gates[0] +
+                                                gates[0]*gates[1]*rho_in*gates[1]*gates[0] +
+                                                gates[1]*rho_in*gates[1])
+    return rho_out
+
 
 def err_cenotn(theta):
     """errr cenotn"""
